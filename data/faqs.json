@@ -1,0 +1,108 @@
+{
+  "faqs": [
+    {
+      "question": { "en": "What are the types of citizenship in Nepal?", "ne": "नेपालमा नागरिकताका प्रकारहरू के के हुन्?" },
+      "keywords": ["types of citizenship", "citizenship types", "kinds of citizenship", "नागरिकताका प्रकार"],
+      "answer": {
+        "en": "There are 6 types of citizenship in Nepal:\n1. Citizenship by birth (born before 2046 B.S.)\n2. Citizenship based on birth (born in Nepal)\n3. Citizenship by descent (inherited from parents)\n4. Naturalized citizenship\n5. Naturalized citizenship through marriage\n6. Pratilipi (duplicate copy)",
+        "ne": "नेपालमा नागरिकताका ६ प्रकार छन्:\n१. जन्मसिद्ध नागरिकता (२०४६ साल अघि जन्म)\n२. जन्मका आधारमा नागरिकता (नेपालमा जन्म)\n३. वंशजको आधारमा नागरिकता\n४. अंगीकृत नागरिकता\n५. वैवाहिक अंगीकृत नागरिकता\n६. प्रतिलिपि (नक्कल प्रति)"
+      }
+    },
+    {
+      "question": { "en": "Do I need to go to the Ward Office first for citizenship?", "ne": "नागरिकताको लागि पहिले वडा कार्यालय जानुपर्छ?" },
+      "keywords": ["ward office citizenship", "sifarish patra", "recommendation letter citizenship", "सिफारिस पत्र", "वडा कार्यालय नागरिकता"],
+      "answer": {
+        "en": "Yes. Citizenship has TWO steps:\nStep 1 - Ward Office: Get the Sifarish Patra. Takes same-day to 1-2 working days.\nStep 2 - DAO/CDO Office: Submit documents and receive citizenship.",
+        "ne": "हो। नागरिकताका दुई चरण छन्:\nचरण १ - वडा कार्यालय: सिफारिस पत्र लिनुहोस्। सोही दिनदेखि १-२ दिन लाग्छ।\nचरण २ - DAO/CDO कार्यालय: कागजात बुझाई नागरिकता प्राप्त गर्नुहोस्।"
+      }
+    },
+    {
+      "question": { "en": "Does one parent need to be present for citizenship?", "ne": "नागरिकताको लागि अभिभावक उपस्थित हुनुपर्छ?" },
+      "keywords": ["parent present citizenship", "sanaakhat", "parent verification", "सनाखत", "अभिभावक उपस्थित"],
+      "answer": {
+        "en": "Yes. At Step 2 (DAO/CDO), at least one parent must be physically present for Sanaakhat (identity verification).",
+        "ne": "हो। चरण २ (DAO/CDO) मा, सनाखत (पहिचान प्रमाणीकरण) का लागि कम्तिमा एक अभिभावक स्वयं उपस्थित हुनुपर्छ।"
+      }
+    },
+    {
+      "question": { "en": "How do I get a duplicate citizenship after moving?", "ne": "बसाइसराइ पछि नागरिकता प्रतिलिपि कसरी लिने?" },
+      "keywords": ["pratilipi migration", "basai sarai citizenship", "बसाइसराइ नागरिकता", "प्रतिलिपि बसाइसराइ"],
+      "answer": {
+        "en": "Documents for Pratilipi after Migration:\n1. Ward Office Recommendation Form\n2. Application Form\n3. Land Ownership Certificate\n4. Migration Registration Certificate\n5. Electricity/Water Bills\n6. Citizenship Certificate and Photocopy\n7. Landowner's Citizenship Photocopy\n8. Building Permit and Completion Certificate\n9. 2 photographs",
+        "ne": "बसाइसराइ पछिको प्रतिलिपिका लागि कागजात:\n१. वडा कार्यालय सिफारिस फारम\n२. निवेदन फारम\n३. जग्गाधनी प्रमाण पुर्जा\n४. बसाइसराइ दर्ता प्रमाणपत्र\n५. बिजुली/पानी बिल\n६. नागरिकता प्रमाणपत्र र फोटोकपी\n७. जग्गाधनीको नागरिकता फोटोकपी\n८. घर निर्माण स्वीकृति र सम्पन्न प्रमाणपत्र\n९. फोटो २ प्रति"
+      }
+    },
+    {
+      "question": { "en": "What documents are needed for early birth registration?", "ne": "समयमै जन्मदर्ताको लागि के कागजात चाहिन्छ?" },
+      "keywords": ["early birth registration", "birth within 35 days", "समयमै जन्मदर्ता", "नवजात दर्ता"],
+      "answer": {
+        "en": "Documents for Early Birth Registration (within 35 days — FREE):\n1. Birth registration application form\n2. Hospital birth record\n3. Citizenship certificates of both parents\n4. Parents marriage certificate\n5. Informant's ID if not a parent",
+        "ne": "समयमै जन्मदर्ताका कागजात (३५ दिनभित्र — निःशुल्क):\n१. जन्मदर्ता निवेदन फारम\n२. अस्पताल जन्म विवरण\n३. दुवै अभिभावकको नागरिकता\n४. अभिभावकको विवाह दर्ता प्रमाणपत्र\n५. सूचक अभिभावक नभएमा परिचयपत्र"
+      }
+    },
+    {
+      "question": { "en": "What documents are needed for Standard NID?", "ne": "सामान्य NID का लागि के कागजात चाहिन्छ?" },
+      "keywords": ["standard nid documents", "nid documents adult", "सामान्य NID कागजात"],
+      "answer": {
+        "en": "Documents for Standard NID (age 16+):\n1. Application form\n2. Citizenship certificate (original + copy)\n3. Marriage certificate (if married)\n4. Death certificate of spouse (if widowed)\n5. Original passport (if already issued)",
+        "ne": "सामान्य NID का कागजात (१६ वर्ष+):\n१. निवेदन फारम\n२. नागरिकता प्रमाणपत्र (सक्कल + फोटोकपी)\n३. विवाह दर्ता प्रमाणपत्र (विवाहित भएमा)\n४. मृत्यु प्रमाणपत्र (विधवा/विधुर भएमा)\n५. सक्कल राहदानी (भएमा)"
+      }
+    },
+    {
+      "question": { "en": "What is the Minor's NID?", "ne": "नाबालक परिचयपत्र के हो?" },
+      "keywords": ["minor id", "nabalik parichaya patra", "child nid", "नाबालक परिचयपत्र"],
+      "answer": {
+        "en": "The Minor's ID is issued to children below 16, linked to a parent's NIN. At age 16 it converts to a full NID.\n\nDocuments:\n1. Birth certificate\n2. Parent's NID/citizenship\n3. Parent's NIN\n4. Application form",
+        "ne": "नाबालक परिचयपत्र १६ वर्षभन्दा कमका बालबालिकालाई अभिभावकको NIN सँग जोडिएर जारी हुन्छ। १६ वर्ष पुगेपछि पूर्ण NID मा परिवर्तन हुन्छ।\n\nकागजात:\n१. जन्मदर्ता\n२. अभिभावकको NID/नागरिकता\n३. अभिभावकको NIN\n४. निवेदन फारम"
+      }
+    },
+    {
+      "question": { "en": "What are the types of passport in Nepal?", "ne": "नेपालमा राहदानीका प्रकार के के हुन्?" },
+      "keywords": ["types of passport", "passport types nepal", "राहदानीका प्रकार"],
+      "answer": {
+        "en": "Nepal has 4 types of passports:\n1. Ordinary Passport — Green (general public)\n2. Official Passport — Blue (government officials)\n3. Diplomatic Passport — Red (senior officials)\n4. Travel Document — Black (emergency only)",
+        "ne": "नेपालमा ४ प्रकारका राहदानी छन्:\n१. सामान्य राहदानी — हरियो (सर्वसाधारण)\n२. सरकारी राहदानी — निलो (सरकारी अधिकारी)\n३. कूटनीतिक राहदानी — रातो (उच्च अधिकारी)\n४. यात्रा अनुमतिपत्र — कालो (आकस्मिक मात्र)"
+      }
+    },
+    {
+      "question": { "en": "What documents are needed for ordinary passport?", "ne": "सामान्य राहदानीको लागि के कागजात चाहिन्छ?" },
+      "keywords": ["ordinary passport documents", "regular passport documents", "सामान्य राहदानी कागजात"],
+      "answer": {
+        "en": "Documents for Ordinary Passport (Adults 16+):\n1. Printed online application form\n2. Original Citizenship Certificate\n3. Old passport (if any)\n4. NID or NID number\n5. Bank voucher of fee payment\n6. Marriage certificate (if surname changed)",
+        "ne": "सामान्य राहदानीका कागजात (वयस्क १६+):\n१. अनलाइन निवेदन फारमको प्रिन्ट\n२. सक्कल नागरिकता प्रमाणपत्र\n३. पुरानो राहदानी (भएमा)\n४. NID वा NID नम्बर\n५. शुल्क तिरेको बैंक भौचर\n६. विवाह दर्ता प्रमाणपत्र (थर परिवर्तन भएमा)"
+      }
+    },
+    {
+      "question": { "en": "What is a Travel Document (Black Passport)?", "ne": "यात्रा अनुमतिपत्र (कालो राहदानी) के हो?" },
+      "keywords": ["travel document", "black passport", "emergency passport", "यात्रा अनुमतिपत्र"],
+      "answer": {
+        "en": "Travel Document is an emergency document for Nepalis abroad with lost/expired passport.\n\nDocuments:\n1. Citizenship copy\n2. Old/lost passport copy\n3. Police report\n4. 3 photographs\n\nValidity: 45 days only.",
+        "ne": "यात्रा अनुमतिपत्र विदेशमा रहेका राहदानी हराएका/म्याद सकिएका नेपालीका लागि आकस्मिक कागजात हो।\n\nकागजात:\n१. नागरिकता प्रतिलिपि\n२. पुरानो/हराएको राहदानी प्रतिलिपि\n३. प्रहरी प्रतिवेदन\n४. फोटो ३ प्रति\n\nमान्यता: ४५ दिनमात्र।"
+      }
+    },
+    {
+      "question": { "en": "Can I get passport without citizenship?", "ne": "नागरिकता बिना राहदानी पाउन सकिन्छ?" },
+      "keywords": ["passport without citizenship", "need citizenship for passport", "नागरिकता बिना राहदानी"],
+      "answer": {
+        "en": "No. You must have a valid citizenship certificate before applying for a passport in Nepal.",
+        "ne": "होइन। नेपालमा राहदानीको लागि निवेदन दिनु अघि मान्य नागरिकता प्रमाणपत्र हुनुपर्छ।"
+      }
+    },
+    {
+      "question": { "en": "How long is birth certificate registration free?", "ne": "जन्मदर्ता कति समयसम्म निःशुल्क हुन्छ?" },
+      "keywords": ["birth free", "free birth certificate", "35 days birth", "जन्मदर्ता निःशुल्क"],
+      "answer": {
+        "en": "Birth registration is FREE if done within 35 days of birth. After 35 days a penalty of NPR 100-500 applies.",
+        "ne": "जन्मेको ३५ दिनभित्र दर्ता गरेमा निःशुल्क हुन्छ। ३५ दिनपछि रु. १००-५०० जरिवाना लाग्छ।"
+      }
+    },
+    {
+      "question": { "en": "Is NID card mandatory?", "ne": "NID कार्ड अनिवार्य छ?" },
+      "keywords": ["nid mandatory", "compulsory nid", "do i need nid", "NID अनिवार्य"],
+      "answer": {
+        "en": "NID is being rolled out gradually in Nepal. While not yet mandatory, it is highly recommended.",
+        "ne": "नेपालमा NID क्रमशः लागू भइरहेको छ। अहिलेसम्म अनिवार्य नभए पनि लिनु उचित हुन्छ।"
+      }
+    }
+  ]
+}
