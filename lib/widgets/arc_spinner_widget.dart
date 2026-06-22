@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import '../core/constants/app_colors.dart';
+import '../utils/app_colors.dart';
 
 class ArcSpinnerPainter extends CustomPainter {
   final double progress;

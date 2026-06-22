@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../core/constants/app_colors.dart';
+import '../utils/app_colors.dart';
 
 class LogoBadge extends StatelessWidget {
   final double size;
@@ -24,10 +24,13 @@ class LogoBadge extends StatelessWidget {
       ),
       child: ClipOval(
         child: Image.asset(
-          'assets/logo.png',
+          'assets/images/logo.png',
           width: size,
           height: size,
           fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Icon(Icons.account_balance, size: size * 0.5, color: AppColors.navy);
+          },
         ),
       ),
     );

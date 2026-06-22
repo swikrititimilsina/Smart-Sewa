@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/models/user_session.dart';
-import '../../widgets/logo_badge.dart';
-import '../citizen/citizen_home_screen.dart';
+import '../../utils/app_colors.dart';
+import '../../models/user_model.dart';
+import '../../widgets/logo_badge_widget.dart';
+import '../citizen/citizen_dashboard_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../core/constants/app_colors.dart';
-import '../widgets/logo_badge.dart';
-import '../widgets/arc_spinner_painter.dart';
-import 'auth/login_screen.dart';
+import '../utils/app_colors.dart';
+import '../widgets/logo_badge_widget.dart';
+import '../widgets/arc_spinner_widget.dart';
+import 'login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

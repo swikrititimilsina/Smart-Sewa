@@ -1,0 +1,10 @@
+{
+  "responses": {
+    "nid": "You can apply for a National Identity Card by bringing your Citizenship Certificate to the nearest District Administration Office.",
+    "citizenship": "To apply for Citizenship, you must submit proof of birth in Nepal and your parents' citizenship certificates to your ward office.",
+    "passport": "Passport applications require an existing NID. Apply through the Department of Passports.",
+    "birth": "Birth registration should be done at your local ward office within 35 days of birth.",
+    "hello": "Namaste! I am Smart Sathi. How can I assist you with government services today?",
+    "hi": "Namaste! I am Smart Sathi. How can I assist you with government services today?"
+  }
+}

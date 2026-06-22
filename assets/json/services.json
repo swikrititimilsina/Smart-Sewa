@@ -1,0 +1,20 @@
+[
+  {
+    "id": "1",
+    "name": "National Identity Card",
+    "description": "Apply for or renew your NID",
+    "category": "Identity",
+    "iconName": "credit_card_rounded",
+    "requiredDocuments": ["Citizenship Certificate", "Passport Size Photo"],
+    "estimatedTime": "15 Days"
+  },
+  {
+    "id": "2",
+    "name": "Birth Registration",
+    "description": "Register a new birth",
+    "category": "Civil",
+    "iconName": "child_care_rounded",
+    "requiredDocuments": ["Hospital Certificate", "Parents Citizenship"],
+    "estimatedTime": "3 Days"
+  }
+]
