@@ -23,31 +23,27 @@ coverage/
 *.iml
 *.ipr
 *.iws
-
-# VS Code
 .vscode/
 
 # =========================
 # Android
 # =========================
-android/app/debug
-android/app/profile
-android/app/release
+android/local.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
 
-# Keystore files (VERY IMPORTANT)
+# Signing keys (NEVER COMMIT)
 *.jks
 *.keystore
 key.properties
 
-# Local SDK paths
-android/local.properties
-
 # =========================
 # iOS
 # =========================
-ios/Flutter/.last_build_id
 ios/Pods/
 ios/.symlinks/
+ios/Flutter/.last_build_id
 ios/Runner.xcworkspace/
 
 # Apple certificates
@@ -58,30 +54,32 @@ ios/Runner.xcworkspace/
 # Firebase
 # =========================
 
+# Firebase app configs
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
 # FlutterFire generated config
 lib/firebase_options.dart
 
-# Firebase CLI cache
+# Firebase CLI
 .firebase/
 .firebaserc
 
-# Environment files
+# Firebase Admin SDK keys
+firebase-adminsdk*.json
+service-account.json
+*service-account*.json
+
+# =========================
+# Environment & Secrets
+# =========================
 .env
 .env.*
 *.env
 
-# Service account keys
-service-account.json
-firebase-adminsdk*.json
-google-services-dev.json
-GoogleService-Info-Dev.plist
-
-# =========================
-# Secrets
-# =========================
 secrets.json
-config.json
 credentials.json
+config.json
 
 # =========================
 # Misc
