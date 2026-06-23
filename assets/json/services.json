@@ -1,0 +1,636 @@
+{
+  "citizenship": {
+    "name": "Citizenship Certificate",
+    "nepali_name": "नागरिकता प्रमाणपत्र",
+    "fee": { "en": "Free", "ne": "निःशुल्क" },
+    "processing_time": {
+      "en": "Same day (if documents complete), 2-5 extra days if Sarjaamin needed",
+      "ne": "कागजात पूरा भएमा सोही दिन, सर्जमिन चाहिएमा थप २-५ दिन"
+    },
+    "office": {
+      "en": "Step 1: Ward Office | Step 2: District Administration Office (DAO/CDO)",
+      "ne": "चरण १: वडा कार्यालय | चरण २: जिल्ला प्रशासन कार्यालय (DAO/CDO)"
+    },
+    "types": {
+      "en": [
+        "Citizenship by birth (born before 2046 B.S.)",
+        "Citizenship based on birth (born in Nepal)",
+        "Citizenship by descent (inherited from parents)",
+        "Naturalized citizenship (foreign nationals meeting legal requirements)",
+        "Naturalized citizenship through marriage (foreign woman married to Nepali citizen)",
+        "Pratilipi (duplicate copy)"
+      ],
+      "ne": [
+        "जन्मसिद्ध नागरिकता (२०४६ साल अघि जन्म भएको)",
+        "जन्मका आधारमा नागरिकता (नेपालमा जन्म भएको)",
+        "वंशजको आधारमा नागरिकता (आमा वा बाबाबाट प्राप्त)",
+        "अंगीकृत नागरिकता (कानुनी सर्त पूरा गर्ने विदेशी नागरिक)",
+        "वैवाहिक अंगीकृत नागरिकता (नेपाली पुरुषसँग विवाह गरेकी विदेशी महिला)",
+        "प्रतिलिपि (नागरिकताको नक्कल प्रति)"
+      ]
+    },
+    "eligibility": {
+      "en": [
+        "Must be 16 years or older",
+        "Born in Nepal or parents must be Nepali citizens",
+        "Must have birth certificate",
+        "One parent must be physically present at DAO (Sanaakhat)"
+      ],
+      "ne": [
+        "१६ वर्ष वा सोभन्दा बढी उमेर हुनुपर्छ",
+        "नेपालमा जन्म भएको वा आमा/बाबा नेपाली नागरिक हुनुपर्छ",
+        "जन्म दर्ता प्रमाणपत्र हुनुपर्छ",
+        "DAO मा कम्तिमा एक अभिभावक उपस्थित हुनुपर्छ (सनाखत)"
+      ]
+    },
+    "required_documents": {
+      "citizenship_by_descent": {
+        "en": [
+          "Application form",
+          "Citizenship certificate of father or mother, or relatives within three generations",
+          "Birth certificate or recommendation from local level confirming birthplace and relationship",
+          "Relationship verification certificate (if using relatives citizenship within three generations)",
+          "Academic certificate (if available)"
+        ],
+        "ne": [
+          "निवेदन फारम",
+          "बाबा वा आमा वा तीन पुस्ताभित्रका नातेदारको नागरिकता प्रमाणपत्र",
+          "जन्मस्थान र नाता प्रमाणित गर्ने जन्मदर्ता वा स्थानीय तहको सिफारिस",
+          "नाता प्रमाणित प्रमाणपत्र (तीन पुस्ताभित्रका नातेदारको नागरिकता प्रयोग गरेमा)",
+          "शैक्षिक प्रमाणपत्र (भएमा)"
+        ]
+      },
+      "naturalized_through_marriage": {
+        "en": [
+          "Application form (Schedule-7)",
+          "Proof of marriage (local authority recommendation)",
+          "Valid visa (if required)",
+          "Proof of process of renouncing foreign citizenship"
+        ],
+        "ne": [
+          "निवेदन फारम (अनुसूची-७)",
+          "विवाहको प्रमाण (स्थानीय निकायको सिफारिस)",
+          "मान्य भिसा (आवश्यक भएमा)",
+          "विदेशी नागरिकता त्याग प्रक्रियाको प्रमाण"
+        ]
+      },
+      "naturalized": {
+        "en": [
+          "Mother's citizenship certificate",
+          "Birth certificate",
+          "Proof of permanent residence in Nepal",
+          "Self-declaration of not holding foreign citizenship"
+        ],
+        "ne": [
+          "आमाको नागरिकता प्रमाणपत्र",
+          "जन्मदर्ता प्रमाणपत्र",
+          "नेपालमा स्थायी बसोबासको प्रमाण",
+          "विदेशी नागरिकता नभएको स्वघोषणा"
+        ]
+      },
+      "pratilipi_after_migration": {
+        "en": [
+          "Recommendation Form for Citizenship Duplicate Copy from Ward Office",
+          "Application Form (available at the office)",
+          "Land Ownership Certificate (Land Registration Certificate)",
+          "Migration Registration Certificate",
+          "Electricity and Water Bills",
+          "Citizenship Certificate and Photocopy",
+          "Photocopy of Landowner's Citizenship Certificate",
+          "Building Construction Permit and Building Completion Certificate",
+          "2 passport size photographs"
+        ],
+        "ne": [
+          "वडा कार्यालयबाट नागरिकता प्रतिलिपिको लागि सिफारिस फारम",
+          "निवेदन फारम (कार्यालयमा उपलब्ध)",
+          "जग्गाधनी प्रमाण पुर्जा",
+          "बसाइसराइ दर्ता प्रमाणपत्र",
+          "बिजुली र पानीको बिल",
+          "नागरिकता प्रमाणपत्र र फोटोकपी",
+          "जग्गाधनीको नागरिकता प्रमाणपत्रको फोटोकपी",
+          "घर बनाउने स्वीकृति र घर सम्पन्न प्रमाणपत्र",
+          "पासपोर्ट साइजको फोटो २ प्रति"
+        ]
+      },
+      "pratilipi_add_husband_name": {
+        "en": [
+          "Recommendation Form for Citizenship Duplicate Copy from Husband's Ward Office",
+          "Application Form (available at the office)",
+          "Photocopy of Husband's Citizenship Certificate",
+          "Marriage Registration Certificate",
+          "Applicant's Citizenship Certificate and Photocopy",
+          "Husband must be present for identification/verification",
+          "2 passport size photographs"
+        ],
+        "ne": [
+          "पतिको वडा कार्यालयबाट नागरिकता प्रतिलिपिको सिफारिस फारम",
+          "निवेदन फारम (कार्यालयमा उपलब्ध)",
+          "पतिको नागरिकता प्रमाणपत्रको फोटोकपी",
+          "विवाह दर्ता प्रमाणपत्र",
+          "निवेदकको नागरिकता प्रमाणपत्र र फोटोकपी",
+          "पहिचानको लागि पति स्वयं उपस्थित हुनुपर्छ",
+          "पासपोर्ट साइजको फोटो २ प्रति"
+        ]
+      },
+      "pratilipi_after_divorce": {
+        "en": [
+          "Recommendation Form for Citizenship Duplicate Copy from Parental Ward Office",
+          "Application Form (available at the office)",
+          "Divorce Registration Certificate",
+          "Court Decision/Judgment Document",
+          "Identification by relative from parental family (mother, father, elder or younger brother)",
+          "Citizenship Certificate of the person providing identification",
+          "2 passport size photographs"
+        ],
+        "ne": [
+          "माइतीको वडा कार्यालयबाट नागरिकता प्रतिलिपिको सिफारिस फारम",
+          "निवेदन फारम (कार्यालयमा उपलब्ध)",
+          "सम्बन्ध विच्छेद (पारपाचुके) दर्ता प्रमाणपत्र",
+          "अदालतको फैसला कागजात",
+          "माइती परिवारका नातेदारबाट पहिचान (आमा, बाबा, दाजु वा भाई)",
+          "पहिचान गर्ने व्यक्तिको नागरिकता प्रमाणपत्र",
+          "पासपोर्ट साइजको फोटो २ प्रति"
+        ]
+      },
+      "pratilipi_surname_correction": {
+        "en": [
+          "Recommendation Form for Citizenship Duplicate Copy from Ward Office",
+          "Application Form (available at the office)",
+          "Ward Recommendation Letter for Surname Correction",
+          "Citizenship Certificate and Photocopy",
+          "2 passport size photographs"
+        ],
+        "ne": [
+          "वडा कार्यालयबाट नागरिकता प्रतिलिपिको सिफारिस फारम",
+          "निवेदन फारम (कार्यालयमा उपलब्ध)",
+          "थर सुधारको लागि वडा सिफारिस पत्र",
+          "नागरिकता प्रमाणपत्र र फोटोकपी",
+          "पासपोर्ट साइजको फोटो २ प्रति"
+        ]
+      }
+    },
+    "steps": {
+      "en": [
+        "Step 1 - Ward Office: Collect the citizenship application form (free of charge)",
+        "Step 1 - Ward Office: Fill the form accurately cross-checking against birth certificate and parents citizenship",
+        "Step 1 - Ward Office: Attach photocopies of all required documents with originals and submit to Ward Office counter",
+        "Step 1 - Ward Office: Ward Office verifies identity, confirms permanent residence and parental relationship",
+        "Step 1 - Ward Office: Receive Sifarish Patra (recommendation letter) — same day to 1-2 working days",
+        "Step 2 - DAO: Book online token appointment at your DAO official website (required in Kathmandu and major districts)",
+        "Step 2 - DAO: Visit DAO on appointed date with all original documents, photocopies, Sifarish Patra, photos and at least one parent",
+        "Step 2 - DAO: Parent/guardian identity verification (Sanaakhat) — one parent must be physically present",
+        "Step 2 - DAO: CDO or authorized officer signs and stamps the citizenship certificate",
+        "Step 2 - DAO: Receive citizenship same day if documents complete, or 2-5 extra days if Sarjaamin verification needed"
+      ],
+      "ne": [
+        "चरण १ - वडा कार्यालय: नागरिकता निवेदन फारम लिनुहोस् (निःशुल्क)",
+        "चरण १ - वडा कार्यालय: जन्मदर्ता र अभिभावकको नागरिकतासँग दाँजेर फारम सही ढंगले भर्नुहोस्",
+        "चरण १ - वडा कार्यालय: सबै आवश्यक कागजातको फोटोकपी सहित मूल प्रति वडा कार्यालयको काउन्टरमा बुझाउनुहोस्",
+        "चरण १ - वडा कार्यालय: वडा कार्यालयले पहिचान, स्थायी बसोबास र अभिभावकसँगको नाता प्रमाणित गर्छ",
+        "चरण १ - वडा कार्यालय: सिफारिस पत्र प्राप्त गर्नुहोस् — सोही दिनदेखि १-२ कार्य दिनसम्म",
+        "चरण २ - DAO: आफ्नो DAO को आधिकारिक वेबसाइटमा अनलाइन टोकन समय लिनुहोस् (काठमाडौं र प्रमुख जिल्लामा अनिवार्य)",
+        "चरण २ - DAO: तोकिएको मितिमा सबै मूल कागजात, फोटोकपी, सिफारिस पत्र, फोटो र कम्तिमा एक अभिभावक सहित DAO जानुहोस्",
+        "चरण २ - DAO: अभिभावकको पहिचान प्रमाणीकरण (सनाखत) — एक अभिभावक स्वयं उपस्थित हुनुपर्छ",
+        "चरण २ - DAO: CDO वा अधिकृत अधिकारीले नागरिकता प्रमाणपत्रमा सही र छाप लगाउनुहुन्छ",
+        "चरण २ - DAO: कागजात पूरा भएमा सोही दिन नागरिकता प्राप्त हुन्छ, सर्जमिन आवश्यक भएमा थप २-५ दिन लाग्छ"
+      ]
+    },
+    "keywords": [
+      "citizenship", "nagarikta", "nagrikta",
+      "citizen certificate", "citizenship certificate",
+      "how to get citizenship", "apply citizenship",
+      "नागरिकता", "nagarik",
+      "citizenship by birth", "citizenship by descent",
+      "naturalized citizenship", "pratilipi",
+      "duplicate citizenship", "sifarish patra",
+      "dao", "cdo", "ward office citizenship",
+      "sanaakhat", "sarjaamin",
+      "सनाखत", "सर्जमिन", "सिफारिस", "प्रतिलिपि",
+      "वडा कार्यालय", "नागरिकता प्रमाणपत्र"
+    ]
+  },
+
+  "birth_certificate": {
+    "name": "Birth Registration Certificate",
+    "nepali_name": "जन्म दर्ता प्रमाणपत्र",
+    "fee": { "en": "Free (within 35 days), NPR 100-500 penalty (after 35 days)", "ne": "निःशुल्क (३५ दिनभित्र), रु. १००-५०० जरिवाना (३५ दिनपछि)" },
+    "processing_time": { "en": "3-5 working days", "ne": "३-५ कार्य दिन" },
+    "office": { "en": "Local Ward Office", "ne": "स्थानीय वडा कार्यालय" },
+    "types": {
+      "en": [
+        "Early Registration — within 35 days of birth (Free)",
+        "Late Registration — after 35 days (NPR 100-500 penalty)",
+        "Special Cases — father abroad / unknown / orphan / foreign parent"
+      ],
+      "ne": [
+        "समयमै दर्ता — जन्मेको ३५ दिनभित्र (निःशुल्क)",
+        "ढिलो दर्ता — ३५ दिनपछि (रु. १००-५०० जरिवाना)",
+        "विशेष अवस्था — बाबा विदेशमा / अज्ञात / अनाथ / विदेशी अभिभावक"
+      ]
+    },
+    "eligibility": {
+      "en": [
+        "Any newborn child",
+        "Parent or guardian can apply as informant",
+        "No age limit for late registration"
+      ],
+      "ne": [
+        "जुनसुकै नवजात शिशु",
+        "अभिभावक वा संरक्षकले सूचक भएर निवेदन दिन सक्छन्",
+        "ढिलो दर्ताको लागि उमेर सीमा छैन"
+      ]
+    },
+    "required_documents": {
+      "early_registration": {
+        "en": [
+          "Birth registration application form",
+          "Hospital or clinic birth record",
+          "Citizenship certificate of both parents",
+          "Parents marriage certificate",
+          "Informants ID if the informant is not a parent",
+          "If born at home (no hospital record): evidence of last vaccination OR ward certificate confirming birth OR witness statement"
+        ],
+        "ne": [
+          "जन्म दर्ता निवेदन फारम",
+          "अस्पताल वा क्लिनिकको जन्म विवरण",
+          "दुवै अभिभावकको नागरिकता प्रमाणपत्र",
+          "अभिभावकको विवाह दर्ता प्रमाणपत्र",
+          "सूचक अभिभावक नभएमा सूचकको परिचयपत्र",
+          "घरमा जन्म भएमा (अस्पताल विवरण नभएमा): अन्तिम खोप लगाएको प्रमाण वा जन्म पुष्टि गर्ने वडा प्रमाणपत्र वा साक्षी बयान"
+        ]
+      },
+      "late_registration": {
+        "en": [
+          "All documents from early registration",
+          "School leaving certificate (if available)",
+          "Vaccination card",
+          "Sworn statements from neighbors to verify birth details",
+          "Additional supporting evidence may be requested by ward office"
+        ],
+        "ne": [
+          "समयमै दर्ताका सबै कागजात",
+          "एसएलसी/SEE प्रमाणपत्र (भएमा)",
+          "खोप कार्ड",
+          "जन्म विवरण पुष्टि गर्न छिमेकीको सपथपत्र",
+          "वडा कार्यालयले थप प्रमाण माग्न सक्छ"
+        ]
+      },
+      "father_abroad": {
+        "en": [
+          "Mother's citizenship certificate",
+          "Father's citizenship certificate",
+          "Parents marriage certificate",
+          "Other required standard documents",
+          "Registration done under guardianship of mother"
+        ],
+        "ne": [
+          "आमाको नागरिकता प्रमाणपत्र",
+          "बाबाको नागरिकता प्रमाणपत्र",
+          "अभिभावकको विवाह दर्ता प्रमाणपत्र",
+          "अन्य आवश्यक मानक कागजात",
+          "आमाको संरक्षकत्वमा दर्ता गरिन्छ"
+        ]
+      },
+      "father_unknown_missing": {
+        "en": [
+          "Mother's citizenship certificate",
+          "Police report regarding disappearance or non-identification of father",
+          "Other required standard documents",
+          "As per National ID and Civil Registration Act 2077"
+        ],
+        "ne": [
+          "आमाको नागरिकता प्रमाणपत्र",
+          "बाबा हराएको वा पहिचान नभएको सम्बन्धी प्रहरी प्रतिवेदन",
+          "अन्य आवश्यक मानक कागजात",
+          "राष्ट्रिय परिचयपत्र तथा पञ्जीकरण ऐन २०७७ बमोजिम"
+        ]
+      },
+      "orphan": {
+        "en": [
+          "Guardian or curator acts as informant (suchak)",
+          "Proof of guardianship or curatorship",
+          "Any available birth records",
+          "Ward recommendation"
+        ],
+        "ne": [
+          "संरक्षक वा रेखदेखकर्ता सूचक बन्न सक्छ",
+          "संरक्षकत्वको प्रमाण",
+          "उपलब्ध भएसम्मको जन्म विवरण",
+          "वडा सिफारिस"
+        ]
+      },
+      "foreign_parent": {
+        "en": [
+          "Copy of passport of the foreign parent",
+          "Proof of temporary residence in the concerned ward",
+          "Nepali parent's citizenship certificate",
+          "Marriage certificate",
+          "Birth registration application form"
+        ],
+        "ne": [
+          "विदेशी अभिभावकको राहदानीको प्रतिलिपि",
+          "सम्बन्धित वडामा अस्थायी बसोबासको प्रमाण",
+          "नेपाली अभिभावकको नागरिकता प्रमाणपत्र",
+          "विवाह दर्ता प्रमाणपत्र",
+          "जन्म दर्ता निवेदन फारम"
+        ]
+      },
+      "migrated_parents": {
+        "en": [
+          "Migration certificate",
+          "House registration certificate",
+          "Tax payment certificate (to show permanent address)",
+          "Standard birth registration documents"
+        ],
+        "ne": [
+          "बसाइसराइ प्रमाणपत्र",
+          "घर दर्ता प्रमाणपत्र",
+          "स्थायी ठेगाना देखाउने कर तिरेको प्रमाणपत्र",
+          "मानक जन्म दर्ता कागजात"
+        ]
+      }
+    },
+    "steps": {
+      "en": [
+        "Collect birth registration form from ward office",
+        "Fill form with child and parent details",
+        "Attach hospital birth record and parent documents",
+        "Submit at ward office",
+        "Pay fee if applicable (after 35 days — NPR 100-500 penalty)",
+        "Collect certificate after 3-5 working days"
+      ],
+      "ne": [
+        "वडा कार्यालयबाट जन्म दर्ता फारम लिनुहोस्",
+        "बच्चा र अभिभावकको विवरण भरी फारम भर्नुहोस्",
+        "अस्पताल जन्म विवरण र अभिभावकको कागजात संलग्न गर्नुहोस्",
+        "वडा कार्यालयमा बुझाउनुहोस्",
+        "लागू भएमा शुल्क तिरुनुहोस् (३५ दिनपछि रु. १००-५०० जरिवाना)",
+        "३-५ कार्य दिनपछि प्रमाणपत्र लिनुहोस्"
+      ]
+    },
+    "keywords": [
+      "birth", "janma", "born", "birth certificate",
+      "janma darta", "birth registration",
+      "register birth", "newborn",
+      "जन्म", "जन्म दर्ता",
+      "birth early", "birth late", "late registration",
+      "birth father abroad", "birth orphan",
+      "birth foreign parent", "home birth",
+      "जन्मदर्ता", "नवजात"
+    ]
+  },
+
+  "nid": {
+    "name": "National Identity Card (NID)",
+    "nepali_name": "राष्ट्रिय परिचयपत्र",
+    "fee": { "en": "Free", "ne": "निःशुल्क" },
+    "processing_time": { "en": "30-60 days", "ne": "३०-६० दिन" },
+    "office": { "en": "Department of National ID and Civil Registration", "ne": "राष्ट्रिय परिचयपत्र तथा पञ्जीकरण विभाग" },
+    "types": {
+      "en": [
+        "Standard NID — for adults aged 16 and above",
+        "Minor's ID / Nabalik Parichaya Patra — for children below 16 (introduced under 4th Amendment 2082/083)"
+      ],
+      "ne": [
+        "सामान्य परिचयपत्र — १६ वर्ष वा सोभन्दा बढी उमेरका वयस्कका लागि",
+        "नाबालक परिचयपत्र — १६ वर्षभन्दा कम उमेरका बालबालिकाका लागि (४ औं संशोधन २०८२/०८३ अनुसार)"
+      ]
+    },
+    "eligibility": {
+      "en": {
+        "standard_nid":  "Must be Nepali citizen, 16 years or older, must have citizenship certificate",
+        "minor_id":      "Any child below 16 years, linked to parent's NIN (National Identity Number)"
+      },
+      "ne": {
+        "standard_nid":  "नेपाली नागरिक हुनुपर्छ, १६ वर्ष वा सोभन्दा बढी, नागरिकता प्रमाणपत्र हुनुपर्छ",
+        "minor_id":      "१६ वर्षभन्दा कम उमेरका बालबालिका, अभिभावकको NIN सँग सम्बन्धित"
+      }
+    },
+    "required_documents": {
+      "standard_nid": {
+        "en": [
+          "Application form",
+          "Citizenship certificate (original + copy)",
+          "Marriage certificate (if married)",
+          "Death certificate of spouse (if widowed)",
+          "Original passport (if already issued — bring for consistency)",
+          "All documents must have consistent information to avoid delays"
+        ],
+        "ne": [
+          "निवेदन फारम",
+          "नागरिकता प्रमाणपत्र (सक्कल + फोटोकपी)",
+          "विवाह दर्ता प्रमाणपत्र (विवाहित भएमा)",
+          "पतिपत्नीको मृत्यु प्रमाणपत्र (विधवा/विधुर भएमा)",
+          "सक्कल राहदानी (पहिले नै जारी भएमा — मिलान गर्नका लागि)",
+          "सबै कागजातमा एकरूपता हुनुपर्छ ढिलाइ हुन नदिन"
+        ]
+      },
+      "minor_id": {
+        "en": [
+          "Birth certificate of the child",
+          "Parent's NID or citizenship certificate",
+          "Parent's NIN (National Identity Number)",
+          "Application form"
+        ],
+        "ne": [
+          "बच्चाको जन्म दर्ता प्रमाणपत्र",
+          "अभिभावकको परिचयपत्र वा नागरिकता प्रमाणपत्र",
+          "अभिभावकको NIN (राष्ट्रिय परिचय नम्बर)",
+          "निवेदन फारम"
+        ]
+      }
+    },
+    "steps": {
+      "en": [
+        "Visit nearest NID enrollment center",
+        "Take token number and wait",
+        "Fill NID application form",
+        "Biometric enrollment — photo, fingerprint, iris scan",
+        "Submit citizenship and required document copies",
+        "Receive acknowledgment slip",
+        "Wait for SMS notification",
+        "Collect NID card with acknowledgment slip"
+      ],
+      "ne": [
+        "नजिकैको NID दर्ता केन्द्रमा जानुहोस्",
+        "टोकन नम्बर लिई पर्खनुहोस्",
+        "NID निवेदन फारम भर्नुहोस्",
+        "बायोमेट्रिक दर्ता — फोटो, औंठाछाप, आइरिस स्क्यान",
+        "नागरिकता र आवश्यक कागजातका प्रतिलिपि बुझाउनुहोस्",
+        "स्वीकृति पर्ची प्राप्त गर्नुहोस्",
+        "SMS सूचनाको प्रतीक्षा गर्नुहोस्",
+        "स्वीकृति पर्ची सहित NID कार्ड लिनुहोस्"
+      ]
+    },
+    "keywords": [
+      "nid", "national id", "identity card",
+      "rastriya parichay", "smart card",
+      "national identity", "id card",
+      "परिचयपत्र", "राष्ट्रिय", "nid card",
+      "minor id", "nabalik parichaya", "child id",
+      "nin", "national identity number",
+      "standard nid", "adult nid",
+      "राष्ट्रिय परिचयपत्र", "नाबालक"
+    ]
+  },
+
+  "passport": {
+    "name": "Passport",
+    "nepali_name": "राहदानी",
+    "fee": { "en": "NPR 5000 (regular ordinary), NPR 10000 (urgent ordinary), Free (official and diplomatic)", "ne": "रु. ५००० (सामान्य), रु. १०,००० (अत्यावश्यक), निःशुल्क (सरकारी र कूटनीतिक)" },
+    "processing_time": { "en": "15-30 days (regular), 3-7 days (urgent), 45 days validity (travel document)", "ne": "१५-३० दिन (सामान्य), ३-७ दिन (अत्यावश्यक), ४५ दिन मान्यता (यात्रा अनुमतिपत्र)" },
+    "office": { "en": "Department of Passport, Narayanhiti", "ne": "राहदानी विभाग, नारायणहिटी" },
+    "types": {
+      "en": [
+        "Ordinary Passport — Green or Chocolate-Brown e-Passport (for general public)",
+        "Official Passport — Blue (for government officials sent abroad for official duties)",
+        "Diplomatic Passport — Red/Crimson (for senior officials: President, PM, Ministers and spouses)",
+        "Travel Document — Black (emergency only, for Nepali nationals without valid passport)"
+      ],
+      "ne": [
+        "सामान्य राहदानी — हरियो वा खैरो ई-राहदानी (सर्वसाधारणका लागि)",
+        "सरकारी राहदानी — निलो (सरकारी कामका लागि विदेश जाने अधिकारीका लागि)",
+        "कूटनीतिक राहदानी — रातो (राष्ट्रपति, प्रधानमन्त्री, मन्त्री र पति/पत्नीका लागि)",
+        "यात्रा अनुमतिपत्र — कालो (आकस्मिक अवस्थामा मात्र, राहदानी नभएका नेपाली नागरिकका लागि)"
+      ]
+    },
+    "eligibility": {
+      "en": {
+        "ordinary":        "Any Nepali citizen aged 16 and above. Minors under 16 need Minor Identity Card verification.",
+        "official":        "Government officials nominated/sent abroad for official duties.",
+        "diplomatic":      "Senior government officials (President, PM, Ministers etc.) and their spouses.",
+        "travel_document": "Nepali nationals abroad who have lost/expired passport and need to return to Nepal urgently."
+      },
+      "ne": {
+        "ordinary":        "१६ वर्ष वा सोभन्दा बढी उमेरका जुनसुकै नेपाली नागरिक। १६ वर्षभन्दा कमका बालबालिकालाई नाबालक परिचयपत्र प्रमाणीकरण चाहिन्छ।",
+        "official":        "सरकारी कामका लागि विदेश खटिएका वा मनोनयन भएका सरकारी अधिकारी।",
+        "diplomatic":      "उच्च सरकारी अधिकारी (राष्ट्रपति, प्रधानमन्त्री, मन्त्री आदि) र तिनका पति/पत्नी।",
+        "travel_document": "राहदानी हराएका वा म्याद सकिएका, तत्काल नेपाल फर्कनुपर्ने विदेशमा रहेका नेपाली नागरिक।"
+      }
+    },
+    "required_documents": {
+      "ordinary_adult": {
+        "en": [
+          "Printed copy of online application form (with barcode and QR code) from nepalpassport.gov.np",
+          "Original Nepali Citizenship Certificate",
+          "Original current or expired passport (if you already hold one)",
+          "National Identity Card (NID) or NID number",
+          "Bank voucher or cash receipt of fee payment (NPR 5000 regular / NPR 10000 urgent)",
+          "Marriage certificate (if surname changed due to marriage)",
+          "Migration certificate (if permanent address differs from citizenship card)"
+        ],
+        "ne": [
+          "nepalpassport.gov.np बाट अनलाइन निवेदन फारमको प्रिन्ट (बारकोड र QR कोड सहित)",
+          "सक्कल नेपाली नागरिकता प्रमाणपत्र",
+          "हालको वा म्याद सकिएको राहदानी (पहिले नै भएमा)",
+          "राष्ट्रिय परिचयपत्र (NID) वा NID नम्बर",
+          "शुल्क तिरेको बैंक भौचर वा रसिद (रु. ५००० सामान्य / रु. १०,००० अत्यावश्यक)",
+          "विवाह दर्ता प्रमाणपत्र (विवाहले थर परिवर्तन भएमा)",
+          "बसाइसराइ प्रमाणपत्र (नागरिकतामा भएको ठेगाना फरक भएमा)"
+        ]
+      },
+      "ordinary_minor": {
+        "en": [
+          "Printed copy of online application form (with barcode and QR code)",
+          "Verification of Minor Identity Card from relevant district/area administration office",
+          "Citizenship certificate of parents or guardian",
+          "NID or NID number",
+          "Bank voucher or cash receipt of fee payment"
+        ],
+        "ne": [
+          "अनलाइन निवेदन फारमको प्रिन्ट (बारकोड र QR कोड सहित)",
+          "सम्बन्धित जिल्ला/क्षेत्र प्रशासन कार्यालयबाट नाबालक परिचयपत्र प्रमाणीकरण",
+          "अभिभावकको नागरिकता प्रमाणपत्र",
+          "NID वा NID नम्बर",
+          "शुल्क तिरेको बैंक भौचर वा रसिद"
+        ]
+      },
+      "official_passport": {
+        "en": [
+          "Original Nepali Citizenship Certificate",
+          "Recommendation or nomination letter from concerned Ministry or constitutional body",
+          "Appointment letter or government service ID",
+          "Previous passport (if any)",
+          "NID or NID number",
+          "No fee required (Official passports are fee-exempt)"
+        ],
+        "ne": [
+          "सक्कल नेपाली नागरिकता प्रमाणपत्र",
+          "सम्बन्धित मन्त्रालय वा संवैधानिक अंगबाट सिफारिस वा मनोनयन पत्र",
+          "नियुक्ति पत्र वा सरकारी सेवा परिचयपत्र",
+          "पहिलेको राहदानी (भएमा)",
+          "NID वा NID नम्बर",
+          "शुल्क आवश्यक छैन (सरकारी राहदानी शुल्क मुक्त)"
+        ]
+      },
+      "diplomatic_passport": {
+        "en": [
+          "Original Nepali Citizenship Certificate",
+          "Official letter of recommendation from Ministry of Foreign Affairs or relevant constitutional body",
+          "Appointment or designation proof (e.g. gazette notification)",
+          "Previous passport (if any)",
+          "NID or NID number",
+          "No fee required (Diplomatic passports are fee-exempt)"
+        ],
+        "ne": [
+          "सक्कल नेपाली नागरिकता प्रमाणपत्र",
+          "परराष्ट्र मन्त्रालय वा सम्बन्धित संवैधानिक अंगबाट आधिकारिक सिफारिस पत्र",
+          "नियुक्ति वा पदस्थापना प्रमाण (जस्तै राजपत्र सूचना)",
+          "पहिलेको राहदानी (भएमा)",
+          "NID वा NID नम्बर",
+          "शुल्क आवश्यक छैन (कूटनीतिक राहदानी शुल्क मुक्त)"
+        ]
+      },
+      "travel_document": {
+        "en": [
+          "Copy of Nepali Citizenship Certificate",
+          "Copy of Nepali passport (the lost or expired one)",
+          "Police report mentioning bearer's name and lost passport number (in case of lost passport)",
+          "Three passport size photographs (45mm x 35mm)",
+          "For minors: copy of birth certificate and copies of both parents Nepali citizenship certificates"
+        ],
+        "ne": [
+          "नेपाली नागरिकता प्रमाणपत्रको प्रतिलिपि",
+          "नेपाली राहदानीको प्रतिलिपि (हराएको वा म्याद सकिएको)",
+          "हराएको राहदानी नम्बर र नाम उल्लेख भएको प्रहरी प्रतिवेदन (हराएको भएमा)",
+          "पासपोर्ट साइजको ३ फोटो (४५mm x ३५mm)",
+          "नाबालकका लागि: जन्मदर्ता प्रतिलिपि र दुवै अभिभावकको नागरिकता प्रतिलिपि"
+        ]
+      }
+    },
+    "steps": {
+      "en": [
+        "Go to nepalpassport.gov.np and fill online application form",
+        "Print the filled application form (must have barcode and QR code)",
+        "Pay fee at bank (Nepal Bank, Rastriya Banijya etc.) and get bank voucher",
+        "Visit passport office with all original documents",
+        "Documents will be checked at counter",
+        "Biometric data will be taken (photo + fingerprint)",
+        "Track status at nepalpassport.gov.np using application number",
+        "Collect passport when ready — SMS will be sent"
+      ],
+      "ne": [
+        "nepalpassport.gov.np मा गई अनलाइन निवेदन फारम भर्नुहोस्",
+        "भरिएको फारम प्रिन्ट गर्नुहोस् (बारकोड र QR कोड हुनुपर्छ)",
+        "बैंकमा शुल्क तिरी भौचर लिनुहोस् (नेपाल बैंक, राष्ट्रिय बाणिज्य बैंक आदि)",
+        "सबै सक्कल कागजात सहित राहदानी कार्यालय जानुहोस्",
+        "काउन्टरमा कागजात जाँच गरिनेछ",
+        "बायोमेट्रिक डाटा लिइनेछ (फोटो + औंठाछाप)",
+        "nepalpassport.gov.np मा निवेदन नम्बरबाट स्थिति हेर्नुहोस्",
+        "तयार भएपछि राहदानी लिनुहोस् — SMS सूचना आउनेछ"
+      ]
+    },
+    "keywords": [
+      "passport", "rahadani", "travel document",
+      "travel", "international travel",
+      "apply passport", "passport fee",
+      "राहदानी", "pasport",
+      "ordinary passport", "official passport",
+      "diplomatic passport", "blue passport",
+      "travel document black", "emergency passport",
+      "lost passport", "minor passport",
+      "passport for government", "government official passport",
+      "सामान्य राहदानी", "यात्रा अनुमतिपत्र"
+    ]
+  }
+}

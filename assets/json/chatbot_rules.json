@@ -1,0 +1,110 @@
+{
+  "greetings": {
+    "patterns": [
+      "hello", "hi", "hey", "namaste", "namaskar",
+      "good morning", "good afternoon", "good evening",
+      "help", "start", "नमस्ते", "hii", "helo",
+      "नमस्कार", "सहयोग", "सुरु"
+    ],
+    "responses": {
+      "en": [
+        "Namaste! I am Smart Sathi. I can help you with:\n  • Citizenship (all types + pratilipi)\n  • Birth Registration\n  • National ID (NID)\n  • Passport\n\nWhat do you need help with?",
+        "Hello! Welcome to Smart Sewa. Ask me about citizenship, birth certificate, NID, or passport!",
+        "Namaste! I am your government service guide. How can I help you today?"
+      ],
+      "ne": [
+        "नमस्ते! म Smart Sathi हुँ। म तपाईंलाई यसमा सहयोग गर्न सक्छु:\n  • नागरिकता (सबै प्रकार + प्रतिलिपि)\n  • जन्म दर्ता\n  • राष्ट्रिय परिचयपत्र (NID)\n  • राहदानी\n\nतपाईंलाई के मा सहयोग चाहियो?",
+        "नमस्ते! Smart Sewa मा स्वागत छ। नागरिकता, जन्मदर्ता, NID, वा राहदानी बारे सोध्नुहोस्!",
+        "नमस्ते! म तपाईंको सरकारी सेवा सहयोगी हुँ। आज म तपाईंलाई कसरी सहयोग गर्न सक्छु?"
+      ]
+    }
+  },
+
+  "goodbye": {
+    "patterns": [
+      "bye", "goodbye", "exit", "quit", "done",
+      "thank you", "thanks", "dhanyabad",
+      "ok bye", "see you", "that is all",
+      "धन्यवाद", "बिदाई", "बाई"
+    ],
+    "responses": {
+      "en": [
+        "Dhanyabad! Hope I was helpful. Namaste!",
+        "Thank you for using Smart Sathi. Have a great day!",
+        "Goodbye! Come back anytime you need help."
+      ],
+      "ne": [
+        "धन्यवाद! आशा छ म सहयोगी भएँ। नमस्ते!",
+        "Smart Sathi प्रयोग गर्नुभएकोमा धन्यवाद। तपाईंको दिन शुभ रहोस्!",
+        "बिदा! सहयोग चाहिएमा फेरि आउनुहोस्।"
+      ]
+    }
+  },
+
+  "fee_general": {
+    "patterns": [
+      "all fees", "service fees", "fees for all",
+      "all charges", "all costs", "price list",
+      "how much for all",
+      "सबै शुल्क", "सबैको शुल्क", "कति पैसा सबै"
+    ],
+    "response": {
+      "en": "Fees for all services:\n\n  • Citizenship Certificate : Free\n  • Birth Registration      : Free (within 35 days)\n                              NPR 100-500 (after 35 days)\n  • National ID (NID)       : FREE\n  • Passport (Regular)      : NPR 5000\n  • Passport (Urgent)       : NPR 10000",
+      "ne": "सबै सेवाहरूको शुल्क:\n\n  • नागरिकता प्रमाणपत्र : निःशुल्क\n  • जन्म दर्ता          : निःशुल्क (३५ दिनभित्र)\n                          रु. १००-५०० (३५ दिनपछि)\n  • राष्ट्रिय परिचयपत्र  : निःशुल्क\n  • राहदानी (सामान्य)    : रु. ५०००\n  • राहदानी (अत्यावश्यक) : रु. १०,०००"
+    }
+  },
+
+  "time_general": {
+    "patterns": [
+      "all processing time", "how long for all",
+      "time for all services", "processing times",
+      "सबैको समय", "कति समय लाग्छ सबै"
+    ],
+    "response": {
+      "en": "Processing times for all services:\n\n  • Citizenship : Same day if documents complete\n                  +2-5 days if Sarjaamin needed\n  • Birth Registration      : 3-5 working days\n  • National ID (NID)       : 30-60 days\n  • Passport (Regular)      : 15-30 days\n  • Passport (Urgent)       : 3-7 days",
+      "ne": "सबै सेवाहरूको समय:\n\n  • नागरिकता : कागजात पूरा भएमा सोही दिन\n              सर्जमिन चाहिएमा थप २-५ दिन\n  • जन्म दर्ता          : ३-५ कार्य दिन\n  • राष्ट्रिय परिचयपत्र  : ३०-६० दिन\n  • राहदानी (सामान्य)    : १५-३० दिन\n  • राहदानी (अत्यावश्यक) : ३-७ दिन"
+    }
+  },
+
+  "thanks": {
+    "patterns": [
+      "thank", "thanks", "thankyou", "thank you",
+      "helpful", "great", "awesome", "perfect",
+      "wonderful", "nice", "excellent", "धन्यवाद",
+      "राम्रो", "सहयोगी"
+    ],
+    "responses": {
+      "en": [
+        "You are welcome! Anything else I can help with?",
+        "Happy to help! Let me know if you need more information.",
+        "Glad I could help! Feel free to ask anything else."
+      ],
+      "ne": [
+        "तपाईंलाई स्वागत छ! अरू केही सहयोग चाहियो?",
+        "सहयोग गर्न पाएर खुसी लाग्यो! थप जानकारी चाहिएमा भन्नुहोस्।",
+        "सहयोग गर्न पाएर खुसी छु! अरू केही सोध्न मन लाग्यो भने सोध्नुहोस्।"
+      ]
+    }
+  },
+
+  "about": {
+    "patterns": [
+      "what are you", "who are you",
+      "what is smart sathi", "about you",
+      "what can you do", "your features",
+      "tell me about yourself",
+      "तिमी को हौ", "तपाई को हो", "Smart Sathi के हो"
+    ],
+    "response": {
+      "en": "I am Smart Sathi, the virtual assistant of Smart Sewa!\n\nI can help you with:\n  • Citizenship Certificate (all types + pratilipi/duplicate)\n  • Birth Registration Certificate\n  • National Identity Card (NID)\n  • Passport\n\nFor each service I can tell you:\n  → Types and eligibility\n  → Required documents (by category)\n  → Step by step process\n  → Fees and processing time\n  → Office locations",
+      "ne": "म Smart Sathi हुँ, Smart Sewa को भर्चुअल सहायक!\n\nम तपाईंलाई यसमा सहयोग गर्न सक्छु:\n  • नागरिकता प्रमाणपत्र (सबै प्रकार + प्रतिलिपि)\n  • जन्म दर्ता प्रमाणपत्र\n  • राष्ट्रिय परिचयपत्र (NID)\n  • राहदानी\n\nहरेक सेवाको लागि म तपाईंलाई बताउन सक्छु:\n  → प्रकार र योग्यता\n  → आवश्यक कागजात (श्रेणी अनुसार)\n  → चरणबद्ध प्रक्रिया\n  → शुल्क र समय\n  → कार्यालयको स्थान"
+    }
+  },
+
+  "unknown": {
+    "response": {
+      "en": "I am sorry, I did not understand that.\n\nI can help you with:\n  1. Citizenship (all types, pratilipi, steps)\n  2. Birth Certificate\n  3. NID (National ID)\n  4. Passport\n\nOr ask about:\n  • 'types of citizenship'\n  • 'pratilipi documents'\n  • 'citizenship by descent'\n  • 'sifarish patra'\n  • 'dao steps'",
+      "ne": "माफ गर्नुहोस्, मैले बुझिनँ।\n\nम तपाईंलाई यसमा सहयोग गर्न सक्छु:\n  १. नागरिकता (सबै प्रकार, प्रतिलिपि, चरण)\n  २. जन्म दर्ता\n  ३. राष्ट्रिय परिचयपत्र (NID)\n  ४. राहदानी\n\nवा यी बारे सोध्नुहोस्:\n  • 'नागरिकताका प्रकार'\n  • 'प्रतिलिपि कागजात'\n  • 'सिफारिस पत्र'\n  • 'dao चरण'"
+    }
+  }
+}
