@@ -45,7 +45,7 @@ class CitSectionHeader extends StatelessWidget {
 
 // ── Inline text field ──────────────────────────────────────────────────────
 class CitField extends StatelessWidget {
-  final double width;
+  final double? width;
   final String? hint;
   final String? label;
   final TextInputType? keyboardType;
@@ -53,7 +53,7 @@ class CitField extends StatelessWidget {
 
   const CitField({
     super.key,
-    this.width = 160,
+    this.width,           // now optional; defaults to filling available space
     this.hint,
     this.label,
     this.keyboardType,
@@ -62,48 +62,51 @@ class CitField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (label != null) ...[
-          Text(label!,
-              style: const TextStyle(fontSize: 11, color: kCitText)),
-          const SizedBox(height: 2),
-        ],
-        SizedBox(
-          width: width,
-          height: 30,
-          child: TextFormField(
-            keyboardType: keyboardType,
-            inputFormatters: inputFormatters,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle:
-                  const TextStyle(fontSize: 11, color: Color(0xFFAAAAAA)),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              isDense: true,
-              border: const OutlineInputBorder(
-                borderSide: BorderSide(color: kCitBorder),
-              ),
-              enabledBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: kCitBorder),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide:
-                    BorderSide(color: kCitAccent.withOpacity(0.7), width: 1.5),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            style: const TextStyle(fontSize: 12, color: kCitText),
+    final field = SizedBox(
+      width: width ?? double.infinity,   // fill parent when no explicit width given
+      height: 30,
+      child: TextFormField(
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle:
+              const TextStyle(fontSize: 11, color: Color(0xFFAAAAAA)),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          isDense: true,
+          border: const OutlineInputBorder(
+            borderSide: BorderSide(color: kCitBorder),
           ),
+          enabledBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: kCitBorder),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide:
+                BorderSide(color: kCitAccent.withOpacity(0.7), width: 1.5),
+          ),
+          filled: true,
+          fillColor: Colors.white,
         ),
-      ],
+        style: const TextStyle(fontSize: 12, color: kCitText),
+      ),
     );
+
+    if (label != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label!, style: const TextStyle(fontSize: 11, color: kCitText)),
+          const SizedBox(height: 2),
+          field,
+        ],
+      );
+    }
+    return field;
   }
 }
+
 
 // ── Label + field row ──────────────────────────────────────────────────────
 class CitLabeledRow extends StatelessWidget {
@@ -115,23 +118,19 @@ class CitLabeledRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 6,
-        runSpacing: 4,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 240,
-            child:
-                Text(label, style: const TextStyle(fontSize: 12, color: kCitText)),
-          ),
-          field,
+          Text(label, style: const TextStyle(fontSize: 12, color: kCitText)),
+          const SizedBox(height: 4),
+          SizedBox(width: double.infinity, child: field),
         ],
       ),
     );
   }
 }
+
 
 // ── Date entry (DD / MM / YYYY) ────────────────────────────────────────────
 class CitDateEntry extends StatelessWidget {

@@ -704,7 +704,10 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
   Widget _buildButtons() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-      child: Row(
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 12,
+        runSpacing: 12,
         children: [
           ElevatedButton(
             onPressed: _submit,
@@ -717,7 +720,6 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
             child: const Text('Submit / पेश गर्नुहोस्',
                 style: TextStyle(fontSize: 14)),
           ),
-          const SizedBox(width: 12),
           ElevatedButton(
             onPressed: _clear,
             style: ElevatedButton.styleFrom(

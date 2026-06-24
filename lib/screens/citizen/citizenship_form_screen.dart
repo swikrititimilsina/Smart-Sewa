@@ -408,12 +408,12 @@ class _CitizenshipFormScreenState
 
   Widget _buildDigitalSignature() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: const [
         Text('निवेदकको डिजिटल दस्तखत / Digital Signature:',
             style: TextStyle(fontSize: 12, color: kCitText)),
         SizedBox(height: 4),
-        CitSignaturePad(width: 210, height: 60),
+        CitSignaturePad(width: double.infinity, height: 60),
         SizedBox(height: 8),
         Text('मिति / Date: ____________________',
             style: TextStyle(fontSize: 12, color: kCitText)),
@@ -578,21 +578,16 @@ class _CitizenshipFormScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Text('दस्तखत / Digital Signature:',
-                style: TextStyle(fontSize: 12, color: kCitText)),
-            SizedBox(width: 8),
-            CitSignaturePad(width: 220, height: 55),
-          ],
-        ),
+        const Text('दस्तखत / Digital Signature:',
+            style: TextStyle(fontSize: 12, color: kCitText)),
+        const SizedBox(height: 6),
+        const CitSignaturePad(width: double.infinity, height: 55),
         const SizedBox(height: 6),
         const CitLabeledRow(
-            label: 'नाम, घर :', field: CitField(width: 200)),
+            label: 'नाम, घर :', field: CitField()),
         const SizedBox(height: 6),
         const CitLabeledRow(
-            label: 'पद :', field: CitField(width: 200)),
+            label: 'पद :', field: CitField()),
       ],
     );
   }
@@ -609,13 +604,13 @@ class _CitizenshipFormScreenState
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: const [
-            CitField(label: 'वितरित ना:प्र.प.नं.:', width: 160),
-            CitField(label: 'मिति :', width: 140),
+            CitField(label: 'वितरित ना:प्र.प.नं.:'),
+            CitField(label: 'मिति :'),
           ],
         ),
         const SizedBox(height: 12),
         LayoutBuilder(builder: (ctx, constraints) {
-          final w = (constraints.maxWidth - 32) / 3;
+          final w = ((constraints.maxWidth - 32) / 3).clamp(100.0, 200.0);
           return Wrap(
             spacing: 16,
             runSpacing: 16,
@@ -626,7 +621,7 @@ class _CitizenshipFormScreenState
                 'सदर गर्ने'
               ])
                 SizedBox(
-                  width: w.clamp(140, 240),
+                  width: w,
                   child: Column(
                     children: [
                       Text(role,
@@ -636,7 +631,7 @@ class _CitizenshipFormScreenState
                               color: kCitText)),
                       const SizedBox(height: 6),
                       const CitSignaturePad(
-                          width: 170, height: 60),
+                          width: double.infinity, height: 60),
                     ],
                   ),
                 ),

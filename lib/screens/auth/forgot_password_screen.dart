@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../utils/app_colors.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -9,17 +10,12 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  final _phoneController       = TextEditingController();
-  final _otpController         = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  bool _otpSent    = false;
-  bool _obscureNew = true;
+  final _emailController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    _phoneController.dispose();
-    _otpController.dispose();
-    _newPasswordController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -43,41 +39,44 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               const Text('Forgot Password',
                   style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.navy)),
               const SizedBox(height: 8),
-              Text('Enter your registered mobile number.',
+              Text('Enter your registered email address.',
                   style: TextStyle(fontSize: 13, color: AppColors.navy.withOpacity(0.7))),
               const SizedBox(height: 40),
-              _buildField(icon: Icons.phone_outlined, hint: 'Registered Mobile Number',
-                  controller: _phoneController, keyboardType: TextInputType.phone),
-              const SizedBox(height: 16),
-              if (!_otpSent)
-                _buildButton(label: 'Send OTP', onPressed: () => setState(() => _otpSent = true)),
-              if (_otpSent) ...[
-                const SizedBox(height: 16),
-                _buildField(icon: Icons.lock_clock_outlined, hint: 'Enter OTP (demo: 1234)',
-                    controller: _otpController, keyboardType: TextInputType.number),
-                const SizedBox(height: 16),
-                _buildField(
-                  icon: Icons.lock_outline,
-                  hint: 'New Password',
-                  controller: _newPasswordController,
-                  obscure: _obscureNew,
-                  suffix: IconButton(
-                    icon: Icon(_obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        color: AppColors.navy.withOpacity(0.5), size: 20),
-                    onPressed: () => setState(() => _obscureNew = !_obscureNew),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                _buildButton(
-                  label: 'Reset Password',
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Password reset successful!'), backgroundColor: AppColors.teal),
-                    );
-                    Future.delayed(const Duration(seconds: 1), () => Navigator.pop(context));
-                  },
-                ),
-              ],
+              _buildField(icon: Icons.email_outlined, hint: 'Registered Email Address',
+                  controller: _emailController, keyboardType: TextInputType.emailAddress),
+              const SizedBox(height: 24),
+              _buildButton(
+                label: 'Send Reset Link',
+                isLoading: _isLoading,
+                onPressed: () async {
+                  final email = _emailController.text.trim();
+                  if (email.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter your email')));
+                    return;
+                  }
+                  
+                  setState(() => _isLoading = true);
+                  try {
+                    await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Password reset link sent to your email!'), backgroundColor: AppColors.teal),
+                      );
+                      Future.delayed(const Duration(seconds: 2), () {
+                        if (mounted) Navigator.pop(context);
+                      });
+                    }
+                  } on FirebaseAuthException catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(e.message ?? 'Failed to send reset link'), backgroundColor: Colors.red),
+                      );
+                    }
+                  } finally {
+                    if (mounted) setState(() => _isLoading = false);
+                  }
+                },
+              ),
             ]),
           ),
         ),
@@ -113,7 +112,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  Widget _buildButton({required String label, required VoidCallback onPressed}) {
+  Widget _buildButton({required String label, required VoidCallback onPressed, bool isLoading = false}) {
     return SizedBox(
       width: double.infinity, height: 52,
       child: DecoratedBox(
@@ -123,11 +122,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           boxShadow: [BoxShadow(color: const Color(0xFF3A8FE8).withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))],
         ),
         child: ElevatedButton(
-          onPressed: onPressed,
+          onPressed: isLoading ? null : onPressed,
           style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
-          child: Text(label,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 1.0)),
+          child: isLoading 
+            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            : Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 1.0)),
         ),
       ),
     );

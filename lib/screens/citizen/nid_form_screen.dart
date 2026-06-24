@@ -1008,8 +1008,10 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
   // Submit / Clear buttons
   // ─────────────────────────────────────────────────────────────────────────
   Widget _buildButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 16,
+      runSpacing: 12,
       children: [
         ElevatedButton.icon(
           onPressed: _submit,
@@ -1023,7 +1025,6 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
                 horizontal: 24, vertical: 14),
           ),
         ),
-        const SizedBox(width: 16),
         ElevatedButton.icon(
           onPressed: _clear,
           icon: const Icon(Icons.clear_rounded, size: 16),

@@ -25,17 +25,18 @@ class BirthLabeledField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: [
-        if (label.isNotEmpty)
-          Text(label, style: const TextStyle(fontSize: 12, color: kNavyBlue)),
-        if (label.isNotEmpty) const SizedBox(width: 4),
-        SizedBox(
-          width: width,
-          child: TextFormField(
+    // Use ConstrainedBox so the field has a preferred width but can shrink
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: width + (label.isNotEmpty ? 100 : 0)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (label.isNotEmpty) ...[
+            Text(label, style: const TextStyle(fontSize: 12, color: kNavyBlue)),
+            const SizedBox(height: 2),
+          ],
+          TextFormField(
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(fontSize: 11, color: kMuted),
@@ -48,8 +49,8 @@ class BirthLabeledField extends StatelessWidget {
             ),
             style: const TextStyle(fontSize: 12),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

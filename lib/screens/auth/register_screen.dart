@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/app_colors.dart';
 import '../../models/user_model.dart';
 import '../../widgets/logo_badge_widget.dart';
@@ -13,17 +15,16 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController            = TextEditingController();
-  final _phoneController           = TextEditingController();
   final _emailController           = TextEditingController();
   final _passwordController        = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePass    = true;
   bool _obscureConfirm = true;
+  bool _isLoading      = false;
 
   @override
   void dispose() {
     _nameController.dispose();
-    _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -56,10 +57,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 32),
               _buildField(icon: Icons.person_outline, hint: 'Full Name', controller: _nameController),
               const SizedBox(height: 14),
-              _buildField(icon: Icons.phone_outlined, hint: 'Mobile Number (+977)',
-                  controller: _phoneController, keyboardType: TextInputType.phone),
-              const SizedBox(height: 14),
-              _buildField(icon: Icons.email_outlined, hint: 'Email Address (Optional)',
+              _buildField(icon: Icons.email_outlined, hint: 'Email Address',
                   controller: _emailController, keyboardType: TextInputType.emailAddress),
               const SizedBox(height: 14),
               _buildField(
@@ -91,25 +89,65 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     boxShadow: [BoxShadow(color: const Color(0xFF3A8FE8).withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))],
                   ),
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: _isLoading ? null : () async {
                       final name = _nameController.text.trim();
-                      if (name.isNotEmpty) {
-                        UserSession.loggedInName  = name;
-                        UserSession.loggedInPhone = _phoneController.text.trim();
+                      final email = _emailController.text.trim();
+                      final pass = _passwordController.text.trim();
+                      final conf = _confirmPasswordController.text.trim();
+
+                      if (email.isEmpty || pass.isEmpty || name.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+                        return;
                       }
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Account created successfully!'), backgroundColor: AppColors.teal),
-                      );
-                      Future.delayed(const Duration(seconds: 1), () {
+                      if (pass != conf) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+                        return;
+                      }
+
+                      setState(() => _isLoading = true);
+                      try {
+                        final userCred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+                          email: email,
+                          password: pass,
+                        );
+                        
+                        if (userCred.user != null) {
+                          // Update Firebase Auth profile so displayName is always available as fallback
+                          await userCred.user!.updateDisplayName(name);
+                          
+                          await FirebaseFirestore.instance.collection('users').doc(userCred.user!.uid).set({
+                            'name': name,
+                            'email': email,
+                            'role': 'citizen',
+                            'createdAt': FieldValue.serverTimestamp(),
+                          });
+                        }
+                        
+                        UserSession.loggedInName  = name;
+                        UserSession.loggedInPhone = email; // Fallback for display
+                        
                         if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Account created successfully!'), backgroundColor: AppColors.teal),
+                          );
                           Navigator.pushAndRemoveUntil(context,
                             MaterialPageRoute(builder: (_) => const CitizenHomeScreen()), (route) => false);
                         }
-                      });
+                      } on FirebaseAuthException catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.message ?? 'Registration failed'), backgroundColor: Colors.red),
+                          );
+                        }
+                      } finally {
+                        if (mounted) setState(() => _isLoading = false);
+                      }
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
-                    child: const Text('CREATE ACCOUNT',
+                    child: _isLoading 
+                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('CREATE ACCOUNT',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 1.0)),
                   ),
                 ),
