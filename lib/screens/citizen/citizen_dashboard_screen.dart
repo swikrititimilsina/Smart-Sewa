@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../utils/app_colors.dart';
 import '../../models/user_model.dart';
 import '../../widgets/service_card_widget.dart';
@@ -68,33 +70,42 @@ class CitizenHomeScreen extends StatefulWidget {
 
 class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
   int _currentIndex = 0;
-  int _unreadCount = 0;
-  DateTime _lastViewedAt = DateTime.now();
+  int _totalCount = 0; // total notices in Firestore
+  int _seenCount  = 0; // how many the citizen has "seen" (viewed the tab)
+
+  int get _unreadCount => (_totalCount - _seenCount).clamp(0, 99);
 
   @override
   void initState() {
     super.initState();
-    // Listen to general_notices and count those newer than _lastViewedAt
+    _loadSeenCount(); // Load from Firestore
+    
+    // Keep _totalCount in sync with Firestore
     FirebaseFirestore.instance
         .collection('general_notices')
-        .orderBy('postedAt', descending: true)
         .snapshots()
         .listen((snapshot) {
       if (!mounted) return;
-      final count = snapshot.docs.where((doc) {
-        final ts = (doc.data())['postedAt'] as Timestamp?;
-        if (ts == null) return false;
-        return ts.toDate().isAfter(_lastViewedAt);
-      }).length;
-      setState(() => _unreadCount = count);
+      setState(() => _totalCount = snapshot.docs.length);
     });
   }
 
-  void _onNotificationsViewed() {
+  Future<void> _loadSeenCount() async {
+    final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _lastViewedAt = DateTime.now();
-      _unreadCount = 0;
+      _seenCount = prefs.getInt('seenNoticeCount') ?? 0;
     });
+  }
+
+  /// Called when citizen opens the Notifications tab — marks all as seen.
+  void _onNotificationsViewed() async {
+    if (_seenCount == _totalCount) return; // Prevent unnecessary writes
+    
+    setState(() => _seenCount = _totalCount);
+    
+    // Persist to local device storage using SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('seenNoticeCount', _totalCount);
   }
 
   void _showMenu(BuildContext context) {
