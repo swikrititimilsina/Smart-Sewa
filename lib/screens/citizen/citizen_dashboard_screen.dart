@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/app_colors.dart';
 import '../../models/user_model.dart';
 import '../../widgets/service_card_widget.dart';
@@ -67,6 +68,34 @@ class CitizenHomeScreen extends StatefulWidget {
 
 class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
   int _currentIndex = 0;
+  int _unreadCount = 0;
+  DateTime _lastViewedAt = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen to general_notices and count those newer than _lastViewedAt
+    FirebaseFirestore.instance
+        .collection('general_notices')
+        .orderBy('postedAt', descending: true)
+        .snapshots()
+        .listen((snapshot) {
+      if (!mounted) return;
+      final count = snapshot.docs.where((doc) {
+        final ts = (doc.data())['postedAt'] as Timestamp?;
+        if (ts == null) return false;
+        return ts.toDate().isAfter(_lastViewedAt);
+      }).length;
+      setState(() => _unreadCount = count);
+    });
+  }
+
+  void _onNotificationsViewed() {
+    setState(() {
+      _lastViewedAt = DateTime.now();
+      _unreadCount = 0;
+    });
+  }
 
   void _showMenu(BuildContext context) {
     showModalBottomSheet(
@@ -126,10 +155,10 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> pages = const [
-      _HomeContent(),
-      DocumentsScreen(),
-      NotificationsScreen(),
+    final List<Widget> pages = [
+      const _HomeContent(),
+      const DocumentsScreen(),
+      NotificationsScreen(onViewed: _onNotificationsViewed),
     ];
 
     return Scaffold(
@@ -175,10 +204,40 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                       ),
                       GestureDetector(
                         onTap: () => setState(() => _currentIndex = 2),
-                        child: NavItem(
-                          icon: Icons.notifications_outlined,
-                          label: 'Notifications',
-                          active: _currentIndex == 2,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            NavItem(
+                              icon: Icons.notifications_outlined,
+                              label: 'Notifications',
+                              active: _currentIndex == 2,
+                            ),
+                            if (_unreadCount > 0)
+                              Positioned(
+                                right: -4,
+                                top: -4,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(
+                                      minWidth: 18, minHeight: 18),
+                                  child: Text(
+                                    _unreadCount > 9
+                                        ? '9+'
+                                        : '$_unreadCount',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ],
