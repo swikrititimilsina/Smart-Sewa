@@ -3,6 +3,8 @@ import '../../utils/app_colors.dart';
 import '../../models/user_model.dart';
 import '../../widgets/service_card_widget.dart';
 import '../login_screen.dart';
+import 'application_review_screen.dart';
+import 'post_notice_screen.dart';
 
 // ── Admin menu sheet ──
 class _AdminMenuSheet extends StatelessWidget {
@@ -182,11 +184,35 @@ class AdminHomeScreen extends StatelessWidget {
                     crossAxisCount: 2,
                     crossAxisSpacing: 14,
                     mainAxisSpacing: 14,
-                    children: const [
-                      ServiceTile(icon: Icons.folder_open_outlined,          label: 'Review\nApplications'),
-                      ServiceTile(icon: Icons.people_outline,                label: 'Manage\nCitizens'),
-                      ServiceTile(icon: Icons.notifications_active_outlined, label: 'Send\nNotice'),
-                      ServiceTile(icon: Icons.storage_rounded,               label: 'Database'),
+                    children: [
+                      ServiceTile(
+                        icon: Icons.folder_open_outlined,
+                        label: 'Review\nApplications',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ApplicationReviewScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      const ServiceTile(
+                        icon: Icons.people_outline,
+                        label: 'Manage\nCitizens',
+                      ),
+                      ServiceTile(
+                        icon: Icons.notifications_active_outlined,
+                        label: 'Send\nNotice',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PostNoticeScreen(),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),

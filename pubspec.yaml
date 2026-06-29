@@ -40,6 +40,9 @@ dependencies:
   cloud_firestore: ^6.6.0
   crypto: ^3.0.7
   firebase_auth: ^6.5.4
+  screenshot: ^3.0.0
+  pdf: ^3.13.0
+  syncfusion_flutter_pdfviewer: ^33.2.15
 
 dev_dependencies:
   flutter_test:

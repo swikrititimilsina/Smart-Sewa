@@ -1,8 +1,13 @@
-// lib/screens/citizen/nid_form_screen.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:smartsewa/widgets/nid_widgets.dart';
 import 'package:smartsewa/screens/citizen/section_parent.dart';
 import 'package:smartsewa/screens/citizen/section_spouse.dart';
+import 'package:smartsewa/utils/app_colors.dart';
+import 'package:smartsewa/utils/pdf_capture_helper.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class NIDFormScreen extends StatefulWidget {
   const NIDFormScreen({super.key});
@@ -13,6 +18,7 @@ class NIDFormScreen extends StatefulWidget {
 
 class _NIDFormScreenState extends State<NIDFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _screenshotController = ScreenshotController();
 
   // ── Radio selections ──
   String? _natType;
@@ -32,57 +38,57 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
   // Validate everything, then show the confirm dialog
   // ─────────────────────────────────────────────────────────────────────────
   Future<void> _submit() async {
-    // 1. Validate TextFormField / dropdown validators
-    final formValid = _formKey.currentState?.validate() ?? false;
-
-    // 2. Validate radio groups
-    setState(() {
-      _natTypeError = _natType == null;
-      _genderError = _gender == null;
-      _maritalError = _marital == null;
-    });
-
-    // 3. Validate required uploads
-    final citizenshipUploaded =
-        _citizenshipKey.currentState?.uploaded ?? false;
-    final parentUploaded =
-        _parentCitizenshipKey.currentState?.uploaded ?? false;
-
-    if (!citizenshipUploaded || !parentUploaded) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            '⚠ अनिवार्य कागजातहरू अपलोड गर्नुहोस् '
-            '(नागरिकता र बाबु/आमाको नागरिकता)',
-          ),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
-      return;
-    }
-
-    if (!formValid || _natTypeError || _genderError || _maritalError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠ कृपया सबै अनिवार्य फिल्डहरू भर्नुहोस्'),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 3),
-        ),
-      );
-      return;
-    }
-
-    // 4. All valid — confirm dialog
+    // 1. All valid — confirm dialog
     final confirmed = await _showConfirmDialog();
     if (confirmed == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✓ फाराम पेश गरिएको छ (Form Submitted)'),
-          backgroundColor: kDarkBlue,
-          duration: Duration(seconds: 3),
-        ),
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
       );
+
+      try {
+        final base64String = await captureFormAsPdfBase64(
+          controller: _screenshotController,
+          context: context,
+          formWidget: Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(16),
+            child: _buildFormContent(isPdfCapture: true),
+          ),
+        );
+
+        final user = FirebaseAuth.instance.currentUser;
+
+        if (user == null) {
+          throw Exception('You must be logged in to submit a form.');
+        }
+
+        await FirebaseFirestore.instance.collection('applications').add({
+          'applicant': 'Applicant',
+          'citizenId': user.uid,
+          'title': 'NID Registration',
+          'type': 'NID Registration',
+          'status': 'Pending',
+          'pdfBase64': base64String,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        if (mounted) Navigator.pop(context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ फाराम पेश गरिएको छ (Form Submitted)'),
+            backgroundColor: AppColors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } catch (e) {
+        if (mounted) Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -98,11 +104,11 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Row(
           children: const [
-            Icon(Icons.help_outline_rounded, color: kDarkBlue, size: 24),
+            Icon(Icons.help_outline_rounded, color: AppColors.navy, size: 24),
             SizedBox(width: 8),
             Text(
               'फाराम पेश गर्ने?',
-              style: TextStyle(fontSize: 16, color: kDarkBlue),
+              style: TextStyle(fontSize: 16, color: AppColors.navy),
             ),
           ],
         ),
@@ -152,13 +158,13 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green.shade600,
+              backgroundColor: AppColors.teal,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
             ),
             child: const Text('पेश गर्नुहोस्',
-                style: TextStyle(fontSize: 13)),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -195,91 +201,117 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
   // ─────────────────────────────────────────────────────────────────────────
   // Build
   // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildFormContent({bool isPdfCapture = false}) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: _buildHeader(),
+        ),
+        const SizedBox(height: 8),
+
+        // ── Document Uploads ─────────────────────────────────────────
+        RepaintBoundary(child: _buildDocumentUploads(isPdfCapture: isPdfCapture)),
+
+        // ── Section 1 ────────────────────────────────────────────────
+        RepaintBoundary(child: _buildSection1()),
+
+        // ── Section 2 ────────────────────────────────────────────────
+        RepaintBoundary(child: _buildSection2()),
+
+        // ── Section 3 ────────────────────────────────────────────────
+        RepaintBoundary(child: _buildSection3()),
+
+        // ── Section 4 ────────────────────────────────────────────────
+        RepaintBoundary(child: _buildSection4()),
+
+        // ── Parent / Mother ──────────────────────────────────────────
+        RepaintBoundary(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const FormDivider(),
+              const SectionHeader(' ५. बाबु/पिताको विवरण'),
+              const ParentSection(
+                foreignLabel:
+                    'बाबु विदेशी भए बाबु नागरिक रहेको मुलुकको नाम :',
+              ),
+              const FormDivider(),
+              const SectionHeader(' ६. आमाको विवरण'),
+              const ParentSection(
+                foreignLabel:
+                    'आमा विदेशी भए आमा नागरिक रहेको मुलुकको नाम :',
+              ),
+            ],
+          ),
+        ),
+
+        // ── Grandparents / Spouse ────────────────────────────────────
+        RepaintBoundary(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const FormDivider(),
+              _buildSimpleNameBlock(' ७. हजुरबुबाको विवरण'),
+              _buildSimpleNameBlock(' ८. हजुरआमाको विवरण'),
+              const SectionHeader(' ९. पति/पत्नीको विवरण'),
+              const SpouseSection(),
+            ],
+          ),
+        ),
+
+        // ── Oath + Signature + Buttons ───────────────────────────────
+        RepaintBoundary(
+          child: Column(
+            children: [
+              const FormDivider(),
+              _buildOath(),
+              _buildSignatureSection(),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: const Color(0xFFF0F4FA),
       appBar: AppBar(
-        backgroundColor: kDarkBlue,
+        backgroundColor: AppColors.navy,
         title: const Text(
           'राष्ट्रिय परिचयपत्र फाराम',
-          style: TextStyle(color: Colors.white, fontSize: 16),
+          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(12),
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 10),
-
-            // ── Document Uploads ─────────────────────────────────────────
-            RepaintBoundary(child: _buildDocumentUploads()),
-
-            // ── Section 1 ────────────────────────────────────────────────
-            RepaintBoundary(child: _buildSection1()),
-
-            // ── Section 2 ────────────────────────────────────────────────
-            RepaintBoundary(child: _buildSection2()),
-
-            // ── Section 3 ────────────────────────────────────────────────
-            RepaintBoundary(child: _buildSection3()),
-
-            // ── Section 4 ────────────────────────────────────────────────
-            RepaintBoundary(child: _buildSection4()),
-
-            // ── Parent / Mother ──────────────────────────────────────────
-            RepaintBoundary(
+        child: Screenshot(
+          controller: _screenshotController,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                ]
+              ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const FormDivider(),
-                  const SectionHeader(' ५. बाबु/पिताको विवरण'),
-                  const ParentSection(
-                    foreignLabel:
-                        'बाबु विदेशी भए बाबु नागरिक रहेको मुलुकको नाम :',
-                  ),
-                  const FormDivider(),
-                  const SectionHeader(' ६. आमाको विवरण'),
-                  const ParentSection(
-                    foreignLabel:
-                        'आमा विदेशी भए आमा नागरिक रहेको मुलुकको नाम :',
-                  ),
+                  _buildFormContent(),
+                  _buildButtons(),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
-
-            // ── Grandparents / Spouse ────────────────────────────────────
-            RepaintBoundary(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const FormDivider(),
-                  _buildSimpleNameBlock(' ७. हजुरबुबाको विवरण'),
-                  _buildSimpleNameBlock(' ८. हजुरआमाको विवरण'),
-                  const SectionHeader(' ९. पति/पत्नीको विवरण'),
-                  const SpouseSection(),
-                ],
-              ),
-            ),
-
-            // ── Oath + Signature + Buttons ───────────────────────────────
-            RepaintBoundary(
-              child: Column(
-                children: [
-                  const FormDivider(),
-                  _buildOath(),
-                  _buildSignatureSection(),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
-
-            _buildButtons(),
-            const SizedBox(height: 20),
           ],
+        ),
         ),
       ),
     );
@@ -288,7 +320,7 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
   // ─────────────────────────────────────────────────────────────────────────
   // Document uploads section
   // ─────────────────────────────────────────────────────────────────────────
-  Widget _buildDocumentUploads() {
+  Widget _buildDocumentUploads({bool isPdfCapture = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -300,27 +332,27 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
             children: [
               // Accepted format info banner
               Container(
-                margin: const EdgeInsets.only(bottom: 10),
+                margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 6),
+                    horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: kDarkBlue.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(6),
+                  color: AppColors.teal.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
                   border:
-                      Border.all(color: kDarkBlue.withOpacity(0.15)),
+                      Border.all(color: AppColors.teal.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
                     Icon(Icons.info_outline,
-                        size: 14,
-                        color: kDarkBlue.withOpacity(0.7)),
-                    const SizedBox(width: 6),
+                        size: 16,
+                        color: AppColors.teal),
+                    const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
                         'स्वीकृत फाइल: PDF, DOC, DOCX, JPG, PNG, '
                         'GIF, BMP, WEBP, XLS, XLSX, TXT',
                         style:
-                            TextStyle(fontSize: 10, color: kDarkBlue),
+                            TextStyle(fontSize: 11, color: AppColors.teal, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -329,13 +361,13 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
 
               // ── Required uploads (keyed for validation + clear) ──
               DocUploadTile(
-                key: _citizenshipKey,
+                key: isPdfCapture ? null : _citizenshipKey,
                 icon: Icons.badge_outlined,
                 title: 'नेपाली नागरिकताको प्रमाणपत्रको सक्कल',
                 required: true,
               ),
               DocUploadTile(
-                key: _parentCitizenshipKey,
+                key: isPdfCapture ? null : _parentCitizenshipKey,
                 icon: Icons.people_outline,
                 title: 'बाबु/आमाको नागरिकताको प्रतिलिपि',
                 required: true,
@@ -408,9 +440,9 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
             'राष्ट्रिय परिचयपत्रको लागि निवेदन फाराम',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: kDarkBlue,
+              color: AppColors.navy,
             ),
           ),
         ),
@@ -473,16 +505,16 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
                 child: TextFormField(
                   enabled: false,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'प्रशासनद्वारा भरिनेछ',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 12),
                     isDense: true,
                     filled: true,
-                    fillColor: Color(0xFFEEEEEE),
+                    fillColor: Colors.grey.shade100,
                   ),
-                  style: const TextStyle(fontSize: 12),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.navy),
                 ),
               ),
               const SizedBox(height: 4),
@@ -595,11 +627,11 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
                                 _natType = v;
                                 _natTypeError = false;
                               }),
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              activeColor: AppColors.teal,
                             ),
                             Text(k,
-                                style: const TextStyle(fontSize: 12)),
+                                style: const TextStyle(fontSize: 13)),
                           ],
                         ),
                     ],
@@ -739,21 +771,13 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
                             }),
                             materialTapTargetSize:
                                 MaterialTapTargetSize.shrinkWrap,
+                            activeColor: AppColors.teal,
                           ),
                           Text(e.$1,
-                              style: const TextStyle(fontSize: 12)),
+                              style: const TextStyle(fontSize: 13)),
                         ]),
                     ],
                   ),
-                  if (_genderError)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 2, left: 4),
-                      child: Text(
-                        'कृपया लिङ्ग छान्नुहोस्',
-                        style:
-                            TextStyle(color: Colors.red, fontSize: 11),
-                      ),
-                    ),
                 ],
               ),
 
@@ -795,9 +819,10 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
                             }),
                             materialTapTargetSize:
                                 MaterialTapTargetSize.shrinkWrap,
+                            activeColor: AppColors.teal,
                           ),
                           Text(e.$1,
-                              style: const TextStyle(fontSize: 11)),
+                              style: const TextStyle(fontSize: 13)),
                         ]),
                     ],
                   ),
@@ -1017,24 +1042,26 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
           onPressed: _submit,
           icon: const Icon(Icons.send_rounded, size: 16),
           label: const Text('पेश गर्नुहोस् (Submit)',
-              style: TextStyle(fontSize: 14)),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green.shade600,
+            backgroundColor: AppColors.teal,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(
                 horizontal: 24, vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         ),
         ElevatedButton.icon(
           onPressed: _clear,
           icon: const Icon(Icons.clear_rounded, size: 16),
           label: const Text('मेटाउनुहोस् (Clear)',
-              style: TextStyle(fontSize: 14)),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.grey,
-            foregroundColor: Colors.white,
+            backgroundColor: Colors.grey.shade300,
+            foregroundColor: Colors.black87,
             padding: const EdgeInsets.symmetric(
                 horizontal: 24, vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         ),
       ],

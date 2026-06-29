@@ -1,6 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:smartsewa/widgets/birth_widgets.dart';
+import 'package:smartsewa/utils/app_colors.dart';
+import 'package:smartsewa/utils/pdf_capture_helper.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class BirthFormScreen extends StatefulWidget {
   const BirthFormScreen({super.key});
@@ -11,6 +16,7 @@ class BirthFormScreen extends StatefulWidget {
 
 class _BirthFormScreenState extends State<BirthFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _screenshotController = ScreenshotController();
 
   // Radio state
   String? _gender;
@@ -26,13 +32,71 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
   bool _placeOther = false;
   bool _weightUnknown = false;
 
-  void _submit() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('✓ फाराम पेश गरिएको छ (Form Submitted)'),
-        backgroundColor: kAccent,
-      ),
+  Future<void> _submit() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
+
+    try {
+      final base64String = await captureFormAsPdfBase64(
+        controller: _screenshotController,
+        context: context,
+        formWidget: Container(
+          color: const Color(0xFFF0F4FA),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    _buildSection1(),
+                    _buildSection2(),
+                    _buildSection3(),
+                    _buildSignatory(),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        throw Exception('You must be logged in to submit a form.');
+      }
+
+      await FirebaseFirestore.instance.collection('applications').add({
+        'applicant': 'Applicant',
+        'citizenId': user.uid,
+        'title': 'Birth Registration',
+        'type': 'Birth Registration',
+        'status': 'Pending',
+        'pdfBase64': base64String,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      if (mounted) Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✓ फाराम पेश गरिएको छ (Form Submitted)'),
+          backgroundColor: AppColors.green,
+        ),
+      );
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    }
   }
 
   void _clear() {
@@ -60,9 +124,9 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kBgMain,
+      backgroundColor: const Color(0xFFF0F4FA),
       appBar: AppBar(
-        backgroundColor: kNavyBlue,
+        backgroundColor: AppColors.navy,
         title: const Text(
           'जन्मको सूचना फाराम',
           style: TextStyle(color: Colors.white, fontSize: 16),
@@ -71,18 +135,32 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              _buildSection1(),
-              _buildSection2(),
-              _buildSection3(),
-              _buildSignatory(),
-              _buildButtons(),
-              const SizedBox(height: 24),
-            ],
+        child: Screenshot(
+          controller: _screenshotController,
+          child: SingleChildScrollView(
+            child: Container(
+              color: const Color(0xFFF0F4FA),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 16),
+                        _buildSection1(),
+                        _buildSection2(),
+                        _buildSection3(),
+                        _buildSignatory(),
+                        _buildButtons(),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -92,8 +170,9 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
   // ── HEADER ──────────────────────────────────────────────────────────────
   Widget _buildHeader() {
     return Container(
-      color: kBgCard,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      margin: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -104,56 +183,55 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
             style: TextStyle(fontSize: 11, color: Color(0xFF444444)),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           const Text(
             'जन्मको सूचना फाराम',
             style: TextStyle(
-                fontSize: 16,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 decoration: TextDecoration.underline),
           ),
           const Text('(सूचकले भर्नें)',
               style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 12,
                   fontStyle: FontStyle.italic,
                   color: Color(0xFF444444))),
-          const Divider(color: kBorder),
-          const SizedBox(height: 4),
+          const SizedBox(height: 16),
+          const Divider(color: Color(0xFFEEEEEE)),
+          const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerLeft,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('श्री स्थानीय पञ्जिकाधिकारीज्यू,',
-                    style: TextStyle(fontSize: 12)),
-                const SizedBox(height: 6),
-                Wrap(
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                const Row(
+                  children: [
+                    BirthLabeledField(label: 'वडा नं.', width: 80),
+                    SizedBox(width: 16),
+                    BirthLabeledField(label: 'ग.वि.स./न.पा.', width: 160, isExpanded: true),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const BirthLabeledField(label: 'जिल्ला:', width: 200),
+                const SizedBox(height: 16),
+                const Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   spacing: 8,
                   runSpacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: const [
-                    BirthLabeledField(label: 'वडा नं.', width: 60),
-                    BirthLabeledField(label: 'ग.वि.स./न.पा.', width: 160),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                const BirthLabeledField(label: 'जिल्ला:', width: 200),
-                const SizedBox(height: 10),
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: const [
+                  children: [
                     Text('निम्न लिखित विवरण खुलाई मेरो',
-                        style: TextStyle(fontSize: 12)),
+                        style: TextStyle(fontSize: 13)),
                     BirthLabeledField(label: '', width: 180, hint: 'सम्बन्ध'),
                     Text('को जन्मको सूचना दिन आएको छु ।',
-                        style: TextStyle(fontSize: 12)),
+                        style: TextStyle(fontSize: 13)),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 const Text('कानून बमोजिम जन्म दर्ता गरी पाउँ ।',
-                    style: TextStyle(fontSize: 12)),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -171,31 +249,31 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
         children: [
           // Nepali name
           const NameRowBirth(nepLabel: ''),
-          const SizedBox(height: 6),
+          const SizedBox(height: 12),
           // English name
           const NameRowBirthEn(),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
 
           // DOB
-          Wrap(
+          const Wrap(
             spacing: 16,
-            runSpacing: 8,
+            runSpacing: 16,
             crossAxisAlignment: WrapCrossAlignment.center,
-            children: const [
+            children: [
               BirthDateEntry(label: 'जन्म मिति वि.सं.:'),
               BirthDateEntry(label: 'ई.सं.:'),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
 
           // Birth place checkboxes
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 4,
-            runSpacing: 4,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               const Text('बच्चा जन्मेको ठाउँ :',
-                  style: TextStyle(fontSize: 12, color: kNavyBlue)),
+                  style: TextStyle(fontSize: 13, color: AppColors.navy, fontWeight: FontWeight.w600)),
               _checkItem('घर', _placeHome,
                       (v) => setState(() => _placeHome = v!)),
               _checkItem('स्वास्थ्य', _placeHealth,
@@ -208,16 +286,16 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                       (v) => setState(() => _placeOther = v!)),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
           // Gender
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 4,
-            runSpacing: 4,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               const Text('लिङ्ग / Gender:',
-                  style: TextStyle(fontSize: 12, color: kNavyBlue)),
+                  style: TextStyle(fontSize: 13, color: AppColors.navy, fontWeight: FontWeight.w600)),
               for (final e in [
                 ('पुरुष', 'M'),
                 ('महिला', 'F'),
@@ -227,44 +305,48 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                         (v) => setState(() => _gender = v)),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
 
           // Birth address
           const Text('बच्चा जन्मेको ठेगाना / Child\'s Birth Address:',
               style: TextStyle(
-                  fontSize: 12,
-                  color: kNavyBlue,
+                  fontSize: 13,
+                  color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Wrap(spacing: 10, runSpacing: 8, children: const [
-            BirthLabeledField(label: 'प्रदेश:', width: 100),
-            BirthLabeledField(label: 'ग.पा./न.पा.:', width: 140),
+          const SizedBox(height: 8),
+          const Row(children: [
+            BirthLabeledField(label: 'प्रदेश:', width: 100, isExpanded: true),
+            SizedBox(width: 12),
+            BirthLabeledField(label: 'ग.पा./न.पा.:', width: 140, isExpanded: true),
+            SizedBox(width: 12),
             BirthLabeledField(label: 'वडा नं.:', width: 60),
           ]),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
 
           // Born abroad
           const Text('विदेशमा जन्मेको भए / If born abroad:',
               style: TextStyle(
-                  fontSize: 12,
-                  color: kNavyBlue,
+                  fontSize: 13,
+                  color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Wrap(spacing: 10, runSpacing: 8, children: const [
-            BirthLabeledField(label: 'देश/Country:', width: 120),
-            BirthLabeledField(label: 'Province/State:', width: 120),
-            BirthLabeledField(label: 'Local Address:', width: 150),
-          ]),
           const SizedBox(height: 8),
+          const Row(children: [
+            BirthLabeledField(label: 'देश/Country:', width: 120, isExpanded: true),
+            SizedBox(width: 12),
+            BirthLabeledField(label: 'Province/State:', width: 120, isExpanded: true),
+            SizedBox(width: 12),
+            BirthLabeledField(label: 'Local Address:', width: 150, isExpanded: true),
+          ]),
+          const SizedBox(height: 16),
 
           // Birth type
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 4,
-            runSpacing: 4,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               const Text('जन्मको किसिम / Type of Birth:',
-                  style: TextStyle(fontSize: 12, color: kNavyBlue)),
+                  style: TextStyle(fontSize: 13, color: AppColors.navy, fontWeight: FontWeight.w600)),
               for (final e in [
                 'एकल',
                 'जुम्ल्याहा',
@@ -275,42 +357,43 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                         (v) => setState(() => _birthType = v)),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
 
           // Birth weight
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 6,
+            spacing: 12,
+            runSpacing: 8,
             children: [
               const BirthLabeledField(
-                  label: 'बच्चा जन्मेको तौल (ग्राम):', width: 80),
+                  label: 'बच्चा जन्मेको तौल (ग्राम):', width: 100),
               const Text('ग्राम',
-                  style: TextStyle(fontSize: 12, color: kMuted)),
+                  style: TextStyle(fontSize: 13, color: Colors.grey)),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Checkbox(
                     value: _weightUnknown,
+                    activeColor: AppColors.teal,
                     onChanged: (v) =>
                         setState(() => _weightUnknown = v!),
                   ),
                   const Text('थाहा नभएको / Unknown',
-                      style: TextStyle(fontSize: 12, color: kMuted)),
+                      style: TextStyle(fontSize: 13, color: Colors.grey)),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
 
           // Birth attendant
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 4,
-            runSpacing: 6,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               const Text('मद्दत गर्ने व्यक्ति / Birth Attendant:',
-                  style: TextStyle(fontSize: 12, color: kNavyBlue)),
+                  style: TextStyle(fontSize: 13, color: AppColors.navy, fontWeight: FontWeight.w600)),
               for (final e in [
                 'डाक्टर',
                 'नर्स/अनमी',
@@ -322,18 +405,18 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                         (v) => setState(() => _attendant = v)),
             ],
           ),
-          const SizedBox(height: 4),
-          const BirthLabeledField(label: '☐ अन्य/Other:', width: 200),
           const SizedBox(height: 8),
+          const BirthLabeledField(label: '☐ अन्य/Other:', width: 200),
+          const SizedBox(height: 16),
 
           // Birth process
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 4,
-            runSpacing: 4,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               const Text('जन्म प्रक्रिया / Birth Process:',
-                  style: TextStyle(fontSize: 12, color: kNavyBlue)),
+                  style: TextStyle(fontSize: 13, color: AppColors.navy, fontWeight: FontWeight.w600)),
               for (final e in [
                 'सामान्य',
                 'औजार',
@@ -359,22 +442,22 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
         children: [
           const Text('क) बाजेको नाम:-',
               style: TextStyle(
-                  fontSize: 12,
-                  color: kNavyBlue,
+                  fontSize: 13,
+                  color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           const NameRowBirth(nepLabel: ''),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           const NameRowBirthEn(),
           const BirthFormDivider(),
           const Text('ख) बज्यैको नाम:-',
               style: TextStyle(
-                  fontSize: 12,
-                  color: kNavyBlue,
+                  fontSize: 13,
+                  color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           const NameRowBirth(nepLabel: ''),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           const NameRowBirthEn(),
         ],
       ),
@@ -391,34 +474,34 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
           // Father
           const Text('क) बाबुको नाम:-',
               style: TextStyle(
-                  fontSize: 12,
-                  color: kNavyBlue,
+                  fontSize: 13,
+                  color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           const NameRowBirth(nepLabel: ''),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           const NameRowBirthEn(),
           const BirthFormDivider(),
 
           // Mother
           const Text('ख) आमाको नाम:-',
               style: TextStyle(
-                  fontSize: 12,
-                  color: kNavyBlue,
+                  fontSize: 13,
+                  color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           const NameRowBirth(nepLabel: ''),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           const NameRowBirthEn(),
           const BirthFormDivider(),
 
           // Details table
           const Text('स्थायी ठेगाना तथा अन्य विवरण:',
               style: TextStyle(
-                  fontSize: 12,
-                  color: kNavyBlue,
+                  fontSize: 13,
+                  color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           _buildParentsTable(),
         ],
       ),
@@ -446,64 +529,84 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
       ('जात', false),
     ];
 
-    return Table(
-      border: TableBorder.all(color: kBorder, width: 0.8),
-      columnWidths: const {
-        0: FlexColumnWidth(2),
-        1: FlexColumnWidth(2.5),
-        2: FlexColumnWidth(2.5),
-      },
-      children: [
-        // Header row
-        TableRow(
-          decoration: const BoxDecoration(color: kBgSec),
-          children: [
-            _tableHeader('स्थायी ठेगाना'),
-            _tableHeader('बाबुको विवरण'),
-            _tableHeader('आमाको विवरण'),
-          ],
-        ),
-        // Data rows
-        for (final row in rows)
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Table(
+        border: TableBorder.symmetric(inside: BorderSide(color: Colors.grey.shade200)),
+        columnWidths: const {
+          0: FlexColumnWidth(2.5),
+          1: FlexColumnWidth(2),
+          2: FlexColumnWidth(2),
+        },
+        children: [
+          // Header row
           TableRow(
+            decoration: BoxDecoration(color: AppColors.navy.withOpacity(0.05)),
             children: [
-              Padding(
-                padding: const EdgeInsets.all(6),
-                child: Text(row.$1,
-                    style: const TextStyle(
-                        fontSize: 11, color: kNavyBlue)),
-              ),
-              _tableFieldCell(),
-              _tableFieldCell(),
+              _tableHeader('स्थायी ठेगाना'),
+              _tableHeader('बाबुको विवरण'),
+              _tableHeader('आमाको विवरण'),
             ],
           ),
-      ],
+          // Data rows
+          for (final row in rows)
+            TableRow(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                  child: Text(row.$1,
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.navy, fontWeight: FontWeight.w500)),
+                ),
+                _tableFieldCell(),
+                _tableFieldCell(),
+              ],
+            ),
+        ],
+      ),
     );
   }
 
   Widget _tableHeader(String text) {
     return Padding(
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.all(12),
       child: Text(text,
           textAlign: TextAlign.center,
           style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: kNavyBlue)),
+              color: AppColors.navy)),
     );
   }
 
   Widget _tableFieldCell() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: TextFormField(
-        decoration: const InputDecoration(
-          border: InputBorder.none,
+        decoration: InputDecoration(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(6),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(6),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(6),
+            borderSide: const BorderSide(color: AppColors.teal),
+          ),
+          filled: true,
+          fillColor: Colors.grey.shade50,
           isDense: true,
           contentPadding:
-          EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         ),
-        style: const TextStyle(fontSize: 12),
+        style: const TextStyle(fontSize: 13),
       ),
     );
   }
@@ -517,71 +620,73 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
         children: [
           const Text(
             'यसमा लेखिएको विवरण साँचो हो । झुट्टा ठहरे कानून बमोजिम सहुँला बुझाउँला भनी सिहछाप गर्ने सूचकको विवरण:',
-            style: TextStyle(fontSize: 11, color: kNavyBlue),
+            style: TextStyle(fontSize: 12, color: AppColors.navy),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
 
           // Name
           const Text('सूचकको नाम / Informant\'s Name:',
-              style: TextStyle(fontSize: 12, color: kNavyBlue)),
-          const SizedBox(height: 4),
-          const NameRowBirth(nepLabel: ''),
-          const SizedBox(height: 4),
-          const NameRowBirthEn(),
+              style: TextStyle(fontSize: 13, color: AppColors.navy, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
+          const NameRowBirth(nepLabel: ''),
+          const SizedBox(height: 8),
+          const NameRowBirthEn(),
+          const SizedBox(height: 16),
 
           // Relationship
           const BirthLabeledField(
               label: 'बच्चासँगको नाता / Relationship:',
               width: 200),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
           // Contact
-          Wrap(spacing: 12, runSpacing: 8, children: const [
+          const Row(children: [
             BirthLabeledField(
-                label: 'सम्पर्क नम्बर / Contact:', width: 130),
-            BirthLabeledField(label: 'ई-मेल / Email:', width: 180),
+                label: 'सम्पर्क नम्बर / Contact:', width: 130, isExpanded: true),
+            SizedBox(width: 16),
+            BirthLabeledField(label: 'ई-मेल / Email:', width: 180, isExpanded: true),
           ]),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
 
           // Nepali citizen
           const Text('सूचक नेपाली नागरिक भएमा:',
               style: TextStyle(
-                  fontSize: 12,
-                  color: kNavyBlue,
+                  fontSize: 13,
+                  color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           const BirthLabeledField(
               label: 'नागरिकता प्र.प.नं./राष्ट्रिय परिचय नं.:',
-              width: 180),
-          const SizedBox(height: 10),
+              width: 220),
+          const SizedBox(height: 16),
 
           // Foreign citizen
           const Text('सूचक विदेशी नागरिक भएमा:',
               style: TextStyle(
-                  fontSize: 12,
-                  color: kNavyBlue,
+                  fontSize: 13,
+                  color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Wrap(spacing: 12, runSpacing: 8, children: const [
-            BirthLabeledField(label: 'राहदानी नं./Passport No.:', width: 160),
+          const SizedBox(height: 8),
+          const Row(children: [
+            BirthLabeledField(label: 'राहदानी नं./Passport No.:', width: 160, isExpanded: true),
+            SizedBox(width: 16),
             BirthLabeledField(
-                label: 'जारी गर्ने देश/Issuing Country:', width: 160),
+                label: 'जारी गर्ने देश/Issuing Country:', width: 160, isExpanded: true),
           ]),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
 
           // Date filled
-          Wrap(
+          const Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 4,
-            runSpacing: 6,
-            children: const [
+            spacing: 8,
+            runSpacing: 12,
+            children: [
               Text('फाराम भरेको मिति (साल-महिना-गते):',
-                  style: TextStyle(fontSize: 12, color: kNavyBlue)),
+                  style: TextStyle(fontSize: 13, color: AppColors.navy, fontWeight: FontWeight.bold)),
               BirthDateEntry(label: ''),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
 
           // Fingerprint + signature
           Row(
@@ -592,7 +697,7 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                 children: [
                   for (final lbl in ['दायाँ', 'बायाँ'])
                     Padding(
-                      padding: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.only(right: 16),
                       child: Column(
                         children: [
                           Container(
@@ -600,30 +705,35 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                             height: 100,
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              border: Border.all(color: kBorder),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 8),
                           Text(lbl,
                               style: const TextStyle(
-                                  fontSize: 11, color: kNavyBlue)),
+                                  fontSize: 12, color: AppColors.navy)),
                         ],
                       ),
                     ),
                 ],
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 32),
               // Signature
-              Column(
-                children: const [
-                  SizedBox(height: 60),
-                  Text('.................................',
-                      style:
-                      TextStyle(fontSize: 11, color: kNavyBlue)),
-                  Text('सूचकको सिहछाप',
-                      style:
-                      TextStyle(fontSize: 11, color: kNavyBlue)),
-                ],
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: 80),
+                    Text('......................................................',
+                        style:
+                        TextStyle(fontSize: 13, color: AppColors.navy)),
+                    SizedBox(height: 4),
+                    Text('सूचकको सिहछाप',
+                        style:
+                        TextStyle(fontSize: 12, color: AppColors.navy)),
+                  ],
+                ),
               ),
             ],
           ),
@@ -632,10 +742,10 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
           // Official use
           const Text('(स्थानीय पञ्जिकाधिकारीले भर्ने)',
               style: TextStyle(
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                  color: kNavyBlue)),
-          const SizedBox(height: 8),
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.teal)),
+          const SizedBox(height: 12),
           for (final lbl in [
             'स्थानीय पञ्जिकाधिकारीको नाम:',
             'कर्मचारी संकेत नं./परिचय नं.:',
@@ -646,17 +756,19 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
           ])
             Container(
               decoration: BoxDecoration(
-                  border: Border.all(color: kBorder)),
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade200)),
               padding: const EdgeInsets.symmetric(
-                  horizontal: 8, vertical: 4),
-              margin: const EdgeInsets.only(bottom: 4),
+                  horizontal: 12, vertical: 8),
+              margin: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
                   SizedBox(
-                    width: 220,
+                    width: 240,
                     child: Text(lbl,
                         style: const TextStyle(
-                            fontSize: 11, color: kNavyBlue)),
+                            fontSize: 12, color: AppColors.navy, fontWeight: FontWeight.w500)),
                   ),
                   Expanded(
                     child: TextFormField(
@@ -664,9 +776,9 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                         border: InputBorder.none,
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(
-                            horizontal: 4, vertical: 4),
+                            horizontal: 8, vertical: 4),
                       ),
-                      style: const TextStyle(fontSize: 12),
+                      style: const TextStyle(fontSize: 13),
                     ),
                   ),
                 ],
@@ -678,10 +790,10 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
           // Required documents
           const Text('संलग्न गर्नुपर्ने कागजात:',
               style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: kNavyBlue)),
-          const SizedBox(height: 6),
+                  color: AppColors.navy)),
+          const SizedBox(height: 10),
           for (final doc in [
             '१)  बाबु वा आमाको नागरिकता प्रमाण पत्रको प्रतिलिपि,',
             '२)  स्वास्थ्य संस्था/अस्पतालमा जन्म भएको भए उक्त संस्थाबाट जारी जन्म प्रतिवेदन,',
@@ -690,10 +802,10 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
             '५)  बाबु बेपत्ता वा ठेगाना थाहा नभएको भए सो सम्बन्धी प्रहरी प्रतिवेदन ।',
           ])
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
+              padding: const EdgeInsets.symmetric(vertical: 4),
               child: Text(doc,
                   style: const TextStyle(
-                      fontSize: 11, color: kNavyBlue)),
+                      fontSize: 12, color: AppColors.navy, height: 1.4)),
             ),
         ],
       ),
@@ -706,30 +818,35 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
       child: Wrap(
         alignment: WrapAlignment.center,
-        spacing: 12,
+        spacing: 16,
         runSpacing: 12,
         children: [
           ElevatedButton(
             onPressed: _submit,
             style: ElevatedButton.styleFrom(
-              backgroundColor: kAccent,
+              backgroundColor: AppColors.green,
               foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(
-                  horizontal: 24, vertical: 14),
+                  horizontal: 32, vertical: 16),
             ),
             child: const Text('Submit / पेश गर्नुहोस्',
-                style: TextStyle(fontSize: 14)),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             onPressed: _clear,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey,
-              foregroundColor: Colors.white,
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.red,
+              elevation: 0,
+              side: const BorderSide(color: Colors.red),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(
-                  horizontal: 24, vertical: 14),
+                  horizontal: 32, vertical: 16),
             ),
             child: const Text('Clear / मेटाउनुहोस्',
-                style: TextStyle(fontSize: 14)),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -746,9 +863,10 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
           value: value,
           groupValue: groupValue,
           onChanged: onChanged,
+          activeColor: AppColors.teal,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        Text(label, style: const TextStyle(fontSize: 12, color: kNavyBlue)),
+        Text(label, style: const TextStyle(fontSize: 13, color: AppColors.navy)),
       ],
     );
   }
@@ -760,11 +878,12 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
       children: [
         Checkbox(
             value: value,
+            activeColor: AppColors.teal,
             onChanged: onChanged,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
         Text(label,
-            style: const TextStyle(fontSize: 12, color: kNavyBlue)),
+            style: const TextStyle(fontSize: 13, color: AppColors.navy)),
       ],
     );
   }
-}
+}

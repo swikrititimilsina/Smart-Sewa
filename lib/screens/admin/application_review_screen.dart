@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/status_badge_widget.dart';
+import 'admin_pdf_viewer_screen.dart';
 
 /// Screen for admin to review citizen applications.
 class ApplicationReviewScreen extends StatelessWidget {
   const ApplicationReviewScreen({super.key});
-
-  // TODO: populate from backend once connected
-  static const List<Map<String, dynamic>> _applications = [];
 
   @override
   Widget build(BuildContext context) {
@@ -36,8 +35,24 @@ class ApplicationReviewScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 Expanded(
-                  child: _applications.isEmpty
-                      ? Center(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('applications')
+                        .orderBy('createdAt', descending: true)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      }
+
+                      final applications = snapshot.data?.docs ?? [];
+
+                      if (applications.isEmpty) {
+                        return Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -49,13 +64,38 @@ class ApplicationReviewScreen extends StatelessWidget {
                                       color: AppColors.navy.withOpacity(0.4))),
                             ],
                           ),
-                        )
-                      : ListView.separated(
-                          itemCount: _applications.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final app = _applications[index];
-                            return Container(
+                        );
+                      }
+
+                      return ListView.separated(
+                        itemCount: applications.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final doc = applications[index];
+                          final app = doc.data() as Map<String, dynamic>;
+                          
+                          return InkWell(
+                            onTap: () {
+                              if (app['pdfBase64'] != null) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => AdminPdfViewerScreen(
+                                      applicationId: doc.id,
+                                      pdfBase64: app['pdfBase64'],
+                                      applicantName: app['applicant'] ?? 'Unknown',
+                                      status: app['status'] ?? 'Pending',
+                                      applicationType: app['type'] ?? app['title'],
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('No PDF available for this application')),
+                                );
+                              }
+                            },
+                            child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: Colors.white,
@@ -80,11 +120,16 @@ class ApplicationReviewScreen extends StatelessWidget {
                                     ),
                                   ),
                                   StatusBadge(status: app['status'] ?? 'Pending'),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.chevron_right, color: Colors.grey),
                                 ],
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
               ],
             ),

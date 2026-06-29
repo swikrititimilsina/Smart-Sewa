@@ -1,22 +1,22 @@
-// lib/widgets/citizenship_widgets.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../utils/app_colors.dart';
 
 // ── Shared colour tokens ───────────────────────────────────────────────────
-const Color kCitAccent = Color(0xFF1a3c6e); // deep government navy
-const Color kCitBg = Color(0xFFF5F7FA);
-const Color kCitBorder = Color(0xFFB0BEC5);
-const Color kCitText = Color(0xFF37474F);
+const Color kCitBg = Color(0xFFF0F4FA);
 
 // ── Divider ────────────────────────────────────────────────────────────────
 class CitDivider extends StatelessWidget {
   const CitDivider({super.key});
 
   @override
-  Widget build(BuildContext context) => const Divider(
-        color: kCitBorder,
-        thickness: 0.6,
-        height: 16,
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Divider(
+          color: Colors.grey.shade300,
+          thickness: 1,
+          height: 1,
+        ),
       );
 }
 
@@ -29,14 +29,14 @@ class CitSectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: kCitAccent,
-      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 6),
+      color: AppColors.navy.withOpacity(0.04),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: Text(
         title,
         style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+          color: AppColors.navy,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -53,7 +53,7 @@ class CitField extends StatelessWidget {
 
   const CitField({
     super.key,
-    this.width,           // now optional; defaults to filling available space
+    this.width,
     this.hint,
     this.label,
     this.keyboardType,
@@ -62,75 +62,77 @@ class CitField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final field = SizedBox(
-      width: width ?? double.infinity,   // fill parent when no explicit width given
-      height: 30,
-      child: TextFormField(
-        keyboardType: keyboardType,
-        inputFormatters: inputFormatters,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle:
-              const TextStyle(fontSize: 11, color: Color(0xFFAAAAAA)),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          isDense: true,
-          border: const OutlineInputBorder(
-            borderSide: BorderSide(color: kCitBorder),
-          ),
-          enabledBorder: const OutlineInputBorder(
-            borderSide: BorderSide(color: kCitBorder),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderSide:
-                BorderSide(color: kCitAccent.withOpacity(0.7), width: 1.5),
-          ),
-          filled: true,
-          fillColor: Colors.white,
+    final field = TextFormField(
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        isDense: true,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
         ),
-        style: const TextStyle(fontSize: 12, color: kCitText),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.teal, width: 1.5),
+        ),
+        filled: true,
+        fillColor: Colors.white,
       ),
+      style: const TextStyle(fontSize: 13, color: AppColors.navy),
     );
+
+    Widget result = width != null ? SizedBox(width: width, child: field) : field;
 
     if (label != null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label!, style: const TextStyle(fontSize: 11, color: kCitText)),
-          const SizedBox(height: 2),
-          field,
+          Text(label!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy)),
+          const SizedBox(height: 6),
+          result,
         ],
       );
     }
-    return field;
+    return result;
   }
 }
-
 
 // ── Label + field row ──────────────────────────────────────────────────────
 class CitLabeledRow extends StatelessWidget {
   final String label;
   final Widget field;
+  final bool isExpanded;
 
-  const CitLabeledRow({super.key, required this.label, required this.field});
+  const CitLabeledRow({super.key, required this.label, required this.field, this.isExpanded = false});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final content = Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: kCitText)),
-          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy)),
+          const SizedBox(height: 6),
           SizedBox(width: double.infinity, child: field),
         ],
       ),
     );
+
+    if (isExpanded) {
+      return Expanded(child: content);
+    }
+    return content;
   }
 }
-
 
 // ── Date entry (DD / MM / YYYY) ────────────────────────────────────────────
 class CitDateEntry extends StatelessWidget {
@@ -141,11 +143,17 @@ class CitDateEntry extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _dateBox('DD', 38),
-        const Text(' / ', style: TextStyle(fontSize: 12)),
-        _dateBox('MM', 38),
-        const Text(' / ', style: TextStyle(fontSize: 12)),
-        _dateBox('YYYY', 54),
+        _dateBox('DD', 50),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Text(' / ', style: TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold)),
+        ),
+        _dateBox('MM', 50),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Text(' / ', style: TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold)),
+        ),
+        _dateBox('YYYY', 70),
       ],
     );
   }
@@ -153,25 +161,31 @@ class CitDateEntry extends StatelessWidget {
   Widget _dateBox(String hint, double w) {
     return SizedBox(
       width: w,
-      height: 30,
       child: TextFormField(
         keyboardType: TextInputType.number,
         textAlign: TextAlign.center,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(fontSize: 10, color: Color(0xFFAAAAAA)),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           isDense: true,
-          border: const OutlineInputBorder(
-              borderSide: BorderSide(color: kCitBorder)),
-          enabledBorder: const OutlineInputBorder(
-              borderSide: BorderSide(color: kCitBorder)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: AppColors.teal, width: 1.5),
+          ),
           filled: true,
           fillColor: Colors.white,
         ),
-        style: const TextStyle(fontSize: 12),
+        style: const TextStyle(fontSize: 13, color: AppColors.navy),
       ),
     );
   }
@@ -194,31 +208,33 @@ class _CitPhotoUploadState extends State<CitPhotoUpload> {
     return GestureDetector(
       onTap: () => setState(() => _uploaded = !_uploaded),
       child: Container(
-        width: 90,
-        height: 100,
+        width: 100,
+        height: 120,
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(
-              color: _uploaded ? kCitAccent : kCitBorder, width: 1.2),
-          borderRadius: BorderRadius.circular(4),
+              color: _uploaded ? AppColors.teal : Colors.grey.shade300, width: 1.5),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: _uploaded
             ? const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.check_circle, color: Color(0xFF27ae60), size: 26),
-                  SizedBox(height: 4),
+                  Icon(Icons.check_circle, color: AppColors.teal, size: 32),
+                  SizedBox(height: 8),
                   Text('Uploaded',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 9, color: Color(0xFF27ae60))),
+                      style: TextStyle(fontSize: 11, color: AppColors.teal, fontWeight: FontWeight.bold)),
                 ],
               )
             : Padding(
-                padding: const EdgeInsets.all(6),
-                child: Text(
-                  widget.label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 9, color: kCitText),
+                padding: const EdgeInsets.all(8),
+                child: Center(
+                  child: Text(
+                    widget.label,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 11, color: AppColors.navy, fontWeight: FontWeight.w500),
+                  ),
                 ),
               ),
       ),
@@ -230,8 +246,7 @@ class _CitPhotoUploadState extends State<CitPhotoUpload> {
 class CitSignaturePad extends StatelessWidget {
   final double width;
   final double height;
-  const CitSignaturePad(
-      {super.key, this.width = 200, this.height = 60});
+  const CitSignaturePad({super.key, this.width = double.infinity, this.height = 80});
 
   @override
   Widget build(BuildContext context) {
@@ -240,15 +255,15 @@ class CitSignaturePad extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: kCitBorder),
-        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: const Center(
+      child: Center(
         child: Text(
           'Tap to sign',
-          style: TextStyle(fontSize: 11, color: Color(0xFFAAAAAA)),
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
         ),
       ),
     );
   }
-}
+}

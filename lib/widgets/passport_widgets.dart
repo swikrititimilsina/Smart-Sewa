@@ -1,14 +1,8 @@
-// lib/widgets/passport_widgets.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../utils/app_colors.dart';
 
 // ── Color constants ───────────────────────────────────────────────────────────
-const Color kGovBlue    = Color(0xFF1a3c6e);
-const Color kNepalRed   = Color(0xFFBF0000);
-const Color kBgRoot     = Color(0xFFF0F4FA);
-const Color kBgCard     = Color(0xFFFFFFFF);
-const Color kBgSection  = Color(0xFFE8EEF6);
-const Color kBgOffice   = Color(0xFFFFF9E6);
 const Color kBorderColor = Color(0xFFBBCCDD);
 const Color kTextMuted  = Color(0xFF777777);
 const Color kTextDark   = Color(0xFF222222);
@@ -25,15 +19,15 @@ class PassportSectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: kBgSection,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      margin: const EdgeInsets.only(top: 8, bottom: 4),
+      color: AppColors.navy.withOpacity(0.06),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.only(top: 12, bottom: 8),
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 13,
+          fontSize: 14,
           fontWeight: FontWeight.bold,
-          color: kGovBlue,
+          color: AppColors.navy,
         ),
       ),
     );
@@ -68,27 +62,35 @@ class PassportField extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 10, color: kGovBlue),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 6),
           TextFormField(
             initialValue: defaultValue,
             maxLength: maxLength,
             keyboardType: keyboardType,
             inputFormatters: inputFormatters,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               border: OutlineInputBorder(
-                borderSide: BorderSide(color: kBorderColor),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
               ),
               enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: kBorderColor),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.teal, width: 1.5),
               ),
               isDense: true,
               contentPadding:
-                  EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               counterText: '',
+              filled: true,
+              fillColor: Colors.white,
             ),
-            style: const TextStyle(fontSize: 12),
+            style: const TextStyle(fontSize: 13, color: AppColors.navy),
           ),
         ],
       ),
@@ -118,20 +120,30 @@ class NameSubField extends StatelessWidget {
         children: [
           Text(
             '$nepLabel / $engLabel',
-            style: const TextStyle(fontSize: 10, color: kGovBlue),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.navy),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 6),
           TextFormField(
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               border: OutlineInputBorder(
-                  borderSide: BorderSide(color: kBorderColor)),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
               enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: kBorderColor)),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.teal, width: 1.5),
+              ),
               isDense: true,
               contentPadding:
-                  EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              filled: true,
+              fillColor: Colors.white,
             ),
-            style: const TextStyle(fontSize: 12),
+            style: const TextStyle(fontSize: 13, color: AppColors.navy),
           ),
         ],
       ),
@@ -161,10 +173,10 @@ class PassportCheckItem extends StatelessWidget {
           value: value,
           onChanged: onChanged,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          activeColor: kGovBlue,
+          activeColor: AppColors.teal,
         ),
         Text(label,
-            style: const TextStyle(fontSize: 12, color: kTextDark)),
+            style: const TextStyle(fontSize: 13, color: kTextDark)),
       ],
     );
   }
@@ -195,10 +207,10 @@ class PassportRadioItem<T> extends StatelessWidget {
           groupValue: groupValue,
           onChanged: onChanged,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          activeColor: kGovBlue,
+          activeColor: AppColors.teal,
         ),
         Text(label,
-            style: const TextStyle(fontSize: 12, color: kTextDark)),
+            style: const TextStyle(fontSize: 13, color: kTextDark)),
       ],
     );
   }
@@ -212,8 +224,8 @@ class PhotoPlaceholder extends StatelessWidget {
 
   const PhotoPlaceholder({
     super.key,
-    this.width = 100,
-    this.height = 120,
+    this.width = 110,
+    this.height = 140,
     this.label = 'Photo',
   });
 
@@ -223,16 +235,17 @@ class PhotoPlaceholder extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        border: Border.all(color: kBorderColor, width: 1.5),
-        color: kBgSection,
+        border: Border.all(color: Colors.grey.shade300, width: 1.5),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.grey.shade50,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.person_outline, color: kGovBlue, size: 36),
-          const SizedBox(height: 4),
+          Icon(Icons.person_outline, color: Colors.grey.shade400, size: 40),
+          const SizedBox(height: 8),
           Text(label,
-              style: const TextStyle(fontSize: 10, color: kTextMuted)),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -245,9 +258,9 @@ class PassportDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 6),
-      child: Divider(color: kBorderColor, height: 1),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Divider(color: Colors.grey.shade300, height: 1),
     );
   }
 }

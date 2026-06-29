@@ -1,56 +1,65 @@
 // lib/widgets/birth_widgets.dart
 import 'package:flutter/material.dart';
-
-// ── Color constants ───────────────────────────────────────────────────────────
-const Color kNavyBlue = Color(0xFF1a3c6e);
-const Color kAccent   = Color(0xFF27ae60);
-const Color kBgMain   = Color(0xFFF0F4FA);
-const Color kBgCard   = Color(0xFFFFFFFF);
-const Color kBgSec    = Color(0xFFE8EEF6);
-const Color kBorder   = Color(0xFFBBCCDD);
-const Color kMuted    = Color(0xFF888888);
+import '../utils/app_colors.dart';
 
 // ── Reusable labeled text field ───────────────────────────────────────────────
 class BirthLabeledField extends StatelessWidget {
   final String label;
   final double width;
   final String? hint;
+  final bool isExpanded;
 
   const BirthLabeledField({
     super.key,
     required this.label,
     required this.width,
     this.hint,
+    this.isExpanded = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Use ConstrainedBox so the field has a preferred width but can shrink
+    final field = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (label.isNotEmpty) ...[
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy)),
+          const SizedBox(height: 6),
+        ],
+        TextFormField(
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.teal, width: 1.5),
+            ),
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+          style: const TextStyle(fontSize: 13),
+        ),
+      ],
+    );
+
+    if (isExpanded) {
+      return Expanded(child: field);
+    }
+
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: width + (label.isNotEmpty ? 100 : 0)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (label.isNotEmpty) ...[
-            Text(label, style: const TextStyle(fontSize: 12, color: kNavyBlue)),
-            const SizedBox(height: 2),
-          ],
-          TextFormField(
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(fontSize: 11, color: kMuted),
-              border: const UnderlineInputBorder(
-                borderSide: BorderSide(color: kBorder),
-              ),
-              isDense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-            ),
-            style: const TextStyle(fontSize: 12),
-          ),
-        ],
-      ),
+      child: field,
     );
   }
 }
@@ -63,33 +72,51 @@ class BirthDateEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (label.isNotEmpty)
-          Text(label, style: const TextStyle(fontSize: 12, color: kNavyBlue)),
-        if (label.isNotEmpty) const SizedBox(width: 4),
-        for (final w in [50.0, 40.0, 40.0]) ...[
-          SizedBox(
-            width: w,
-            child: TextFormField(
-              textAlign: TextAlign.center,
-              decoration: const InputDecoration(
-                border: UnderlineInputBorder(
-                    borderSide: BorderSide(color: kBorder)),
-                isDense: true,
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-              ),
-              style: const TextStyle(fontSize: 12),
-            ),
-          ),
-          if (w != 40.0)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 2),
-              child: Text('-', style: TextStyle(fontSize: 12, color: kMuted)),
-            ),
+        if (label.isNotEmpty) ...[
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy)),
+          const SizedBox(height: 6),
         ],
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final w in [60.0, 50.0, 50.0]) ...[
+              SizedBox(
+                width: w,
+                child: TextFormField(
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.teal, width: 1.5),
+                    ),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+                  ),
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+              if (w != 50.0 || w == 60.0) // Correctly place dashes
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6),
+                  child: Text('-', style: TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold)),
+                ),
+            ],
+          ],
+        ),
       ],
     );
   }
@@ -103,13 +130,13 @@ class NameRowBirth extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 8,
-      children: const [
-        BirthLabeledField(label: 'थर:', width: 120),
-        BirthLabeledField(label: 'नाम:', width: 120),
-        BirthLabeledField(label: 'मध्यनाम:', width: 100),
+    return const Row(
+      children: [
+        BirthLabeledField(label: 'थर:', width: 120, isExpanded: true),
+        SizedBox(width: 12),
+        BirthLabeledField(label: 'नाम:', width: 120, isExpanded: true),
+        SizedBox(width: 12),
+        BirthLabeledField(label: 'मध्यनाम:', width: 100, isExpanded: true),
       ],
     );
   }
@@ -121,13 +148,13 @@ class NameRowBirthEn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 8,
-      children: const [
-        BirthLabeledField(label: 'Surname:', width: 120),
-        BirthLabeledField(label: 'Given Name:', width: 120),
-        BirthLabeledField(label: 'Middle Name:', width: 100),
+    return const Row(
+      children: [
+        BirthLabeledField(label: 'Surname:', width: 120, isExpanded: true),
+        SizedBox(width: 12),
+        BirthLabeledField(label: 'Given Name:', width: 120, isExpanded: true),
+        SizedBox(width: 12),
+        BirthLabeledField(label: 'Middle Name:', width: 100, isExpanded: true),
       ],
     );
   }
@@ -143,31 +170,39 @@ class BirthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: kBgCard,
-        border: Border.all(color: kBorder),
-        borderRadius: BorderRadius.circular(4),
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: double.infinity,
-            color: kBgSec,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            color: AppColors.navy.withOpacity(0.04),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Text(
               title,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: kNavyBlue,
+                color: AppColors.navy,
               ),
             ),
           ),
+          Divider(height: 1, color: Colors.grey.shade200),
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             child: child,
           ),
         ],
@@ -182,9 +217,10 @@ class BirthFormDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      child: Divider(color: kBorder, height: 1),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Divider(color: Colors.grey.shade300, height: 1),
     );
   }
 }
+

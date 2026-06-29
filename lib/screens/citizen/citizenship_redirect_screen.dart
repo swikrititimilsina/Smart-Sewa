@@ -179,21 +179,6 @@ class _UploadDocumentCard extends StatelessWidget {
             title: 'नागरिकताको प्रमाणपत्र',
             subtitle: 'Citizenship Certificate',
             onTap: () => _showUploadSnackbar(context, 'Citizenship Certificate'),
-          ),
-          const Divider(height: 1, indent: 56),
-          _UploadDocTile(
-            icon: Icons.people_outline,
-            title: 'बाबु / आमाको नागरिकता',
-            subtitle: "Parent's Citizenship",
-            onTap: () =>
-                _showUploadSnackbar(context, "Parent's Citizenship"),
-          ),
-          const Divider(height: 1, indent: 56),
-          _UploadDocTile(
-            icon: Icons.calendar_today_outlined,
-            title: 'जन्मदर्ता प्रमाणपत्र',
-            subtitle: 'Birth Certificate',
-            onTap: () => _showUploadSnackbar(context, 'Birth Certificate'),
             isLast: true,
           ),
         ],
