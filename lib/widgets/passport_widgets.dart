@@ -42,6 +42,9 @@ class PassportField extends StatelessWidget {
   final int? maxLength;
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
+  final String? fieldKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
 
   const PassportField({
     super.key,
@@ -51,6 +54,9 @@ class PassportField extends StatelessWidget {
     this.maxLength,
     this.keyboardType,
     this.inputFormatters,
+    this.fieldKey,
+    this.dataMap,
+    this.readOnly = false,
   });
 
   @override
@@ -66,7 +72,13 @@ class PassportField extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           TextFormField(
-            initialValue: defaultValue,
+            readOnly: readOnly,
+            initialValue: (dataMap != null && fieldKey != null) ? dataMap![fieldKey] : defaultValue,
+            onChanged: (val) {
+              if (dataMap != null && fieldKey != null) {
+                dataMap![fieldKey!] = val;
+              }
+            },
             maxLength: maxLength,
             keyboardType: keyboardType,
             inputFormatters: inputFormatters,
@@ -103,12 +115,18 @@ class NameSubField extends StatelessWidget {
   final String nepLabel;
   final String engLabel;
   final int flex;
+  final String? fieldKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
 
   const NameSubField({
     super.key,
     required this.nepLabel,
     required this.engLabel,
     required this.flex,
+    this.fieldKey,
+    this.dataMap,
+    this.readOnly = false,
   });
 
   @override
@@ -124,6 +142,13 @@ class NameSubField extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           TextFormField(
+            readOnly: readOnly,
+            initialValue: (dataMap != null && fieldKey != null) ? dataMap![fieldKey] : null,
+            onChanged: (val) {
+              if (dataMap != null && fieldKey != null) {
+                dataMap![fieldKey!] = val;
+              }
+            },
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),

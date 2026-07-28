@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:smartsewa/widgets/passport_widgets.dart';
 import 'package:smartsewa/utils/app_colors.dart';
-import 'package:smartsewa/utils/pdf_capture_helper.dart';
-import 'package:screenshot/screenshot.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class PassportFormScreen extends StatefulWidget {
-  const PassportFormScreen({super.key});
+  final bool readOnly;
+  final Map<String, dynamic>? initialData;
+  final bool asSubView;
+
+  const PassportFormScreen({super.key, this.readOnly = false, this.initialData, this.asSubView = false});
 
   @override
   State<PassportFormScreen> createState() =>
@@ -18,7 +20,7 @@ class PassportFormScreen extends StatefulWidget {
 
 class _PassportFormScreenState extends State<PassportFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _screenshotController = ScreenshotController();
+  final Map<String, dynamic> _formData = {};
 
   String _sex = 'M';
 
@@ -40,7 +42,30 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
   bool _docDiplomatic = false;
   bool _docOfficial = false;
 
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      _formData.addAll(widget.initialData!);
+      _sex = _formData['sex'] ?? 'M';
+      _appRegular = _formData['appRegular'] ?? false;
+      _appEmergency = _formData['appEmergency'] ?? false;
+      _docNew = _formData['docNew'] ?? false;
+      _docRenewal = _formData['docRenewal'] ?? false;
+      _docDamaged = _formData['docDamaged'] ?? false;
+      _docLost = _formData['docLost'] ?? false;
+      _docOrd34 = _formData['docOrd34'] ?? false;
+      _docOrd96 = _formData['docOrd96'] ?? false;
+      _docTemp = _formData['docTemp'] ?? false;
+      _docTravel = _formData['docTravel'] ?? false;
+      _docDiplomatic = _formData['docDiplomatic'] ?? false;
+      _docOfficial = _formData['docOfficial'] ?? false;
+    }
+  }
+
   Future<void> _submit() async {
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -48,20 +73,24 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
     );
 
     try {
-      final base64String = await captureFormAsPdfBase64(
-        controller: _screenshotController,
-        context: context,
-        formWidget: Container(
-          color: const Color(0xFFF0F4FA),
-          child: _buildFormContent(),
-        ),
-      );
-
       final user = FirebaseAuth.instance.currentUser;
-
       if (user == null) {
         throw Exception('You must be logged in to submit a form.');
       }
+
+      _formData['sex'] = _sex;
+      _formData['appRegular'] = _appRegular;
+      _formData['appEmergency'] = _appEmergency;
+      _formData['docNew'] = _docNew;
+      _formData['docRenewal'] = _docRenewal;
+      _formData['docDamaged'] = _docDamaged;
+      _formData['docLost'] = _docLost;
+      _formData['docOrd34'] = _docOrd34;
+      _formData['docOrd96'] = _docOrd96;
+      _formData['docTemp'] = _docTemp;
+      _formData['docTravel'] = _docTravel;
+      _formData['docDiplomatic'] = _docDiplomatic;
+      _formData['docOfficial'] = _docOfficial;
 
       await FirebaseFirestore.instance.collection('applications').add({
         'applicant': 'Applicant',
@@ -69,7 +98,7 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
         'title': 'Passport Application',
         'type': 'Passport',
         'status': 'Pending',
-        'pdfBase64': base64String,
+        'formData': _formData,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -155,83 +184,83 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(),
-                const PassportSectionTitle('Personal Information / व्यक्तिगत विवरण'),
+                PassportSectionTitle('Personal Information / व्यक्तिगत विवरण'),
                 _buildFieldLabel('1. Surname / थर *'),
-                _buildPadded(Wrap(spacing: 12, runSpacing: 8, children: const [PassportField(label: 'थर\nSurname', width: 300)])),
+                _buildPadded(Wrap(spacing: 12, runSpacing: 8, children: [PassportField(readOnly: widget.readOnly, label: 'थर\nSurname', width: 300, fieldKey: 'passportField1', dataMap: _formData)])),
                 _buildFieldLabel('2. Given Names / नाम *'),
-                _buildPadded(Row(children: const [
-                  NameSubField(nepLabel: 'पहिलो नाम', engLabel: 'First Name', flex: 3),
-                  NameSubField(nepLabel: 'बिचको नाम', engLabel: 'Middle Name', flex: 2),
-                  NameSubField(nepLabel: 'थर', engLabel: 'Last Name', flex: 2),
+                _buildPadded(Row(children: [
+                  NameSubField(nepLabel: 'पहिलो नाम', engLabel: 'First Name', flex: 3, fieldKey: 'nameSubField1', dataMap: _formData),
+                  NameSubField(nepLabel: 'बिचको नाम', engLabel: 'Middle Name', flex: 2, fieldKey: 'nameSubField2', dataMap: _formData),
+                  NameSubField(nepLabel: 'थर', engLabel: 'Last Name', flex: 2, fieldKey: 'nameSubField3', dataMap: _formData),
                 ])),
-                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: const [
-                  PassportField(label: '3. Place of Birth / जन्मस्थान *\n(District / Country if Abroad)', width: 220),
-                  PassportField(label: '4. Nationality / राष्ट्रियता *', width: 160, defaultValue: 'NEPALI'),
+                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: [
+                  PassportField(readOnly: widget.readOnly, label: '3. Place of Birth / जन्मस्थान *\n(District / Country if Abroad)', width: 220, fieldKey: 'passportField2', dataMap: _formData),
+                  PassportField(readOnly: widget.readOnly, label: '4. Nationality / राष्ट्रियता *', width: 160, defaultValue: 'NEPALI', fieldKey: 'passportField3', dataMap: _formData),
                 ])),
                 _buildFieldLabel('5. Date of Birth / जन्म मिति (Year/Month/Day)'),
                 _buildDOBRow(),
                 _buildFieldLabel('6. Sex / लिंग *'),
                 _buildPadded(_buildSexRow()),
-                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: const [
-                  PassportField(label: '7. Citizenship or Permit No.\nनागरिकता/अनुमतिपत्र नं. *', width: 200),
-                  PassportField(label: '8. Date of Issue\n(YEAR/MONTH/DAY) *', width: 180),
+                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: [
+                  PassportField(readOnly: widget.readOnly, label: '7. Citizenship or Permit No.\nनागरिकता/अनुमतिपत्र नं. *', width: 200, fieldKey: 'passportField4', dataMap: _formData),
+                  PassportField(readOnly: widget.readOnly, label: '8. Date of Issue\n(YEAR/MONTH/DAY) *', width: 180, fieldKey: 'passportField5', dataMap: _formData),
                 ])),
-                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: const [
-                  PassportField(label: '9. Place of Issue / जारी भएको स्थान *', width: 200),
-                  PassportField(label: '10. National Identity No.\nराष्ट्रिय परिचयपत्र नं.', width: 180),
+                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: [
+                  PassportField(readOnly: widget.readOnly, label: '9. Place of Issue / जारी भएको स्थान *', width: 200, fieldKey: 'passportField6', dataMap: _formData),
+                  PassportField(readOnly: widget.readOnly, label: '10. National Identity No.\nराष्ट्रिय परिचयपत्र नं.', width: 180, fieldKey: 'passportField7', dataMap: _formData),
                 ])),
-                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: const [
-                  PassportField(label: '11. Latest Passport or Travel Document No.\nपछिल्लो राहदानी वा यात्रा अनुमतिपत्र नं.', width: 230),
-                  PassportField(label: '11A. Date of Issue\nजारी मिति *', width: 160),
+                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: [
+                  PassportField(readOnly: widget.readOnly, label: '11. Latest Passport or Travel Document No.\nपछिल्लो राहदानी वा यात्रा अनुमतिपत्र नं.', width: 230, fieldKey: 'passportField8', dataMap: _formData),
+                  PassportField(readOnly: widget.readOnly, label: '11A. Date of Issue\nजारी मिति *', width: 160, fieldKey: 'passportField9', dataMap: _formData),
                 ])),
-                _buildPadded(const PassportField(label: '11B. Place of Issue / जारी भएको स्थान', width: 340)),
-                const PassportDivider(),
-                const PassportSectionTitle('12. Address / ठेगाना'),
-                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: const [
-                  PassportField(label: '12A. Province / प्रदेश *', width: 180),
-                  PassportField(label: '12B. District / जिल्ला *', width: 180),
+                _buildPadded(PassportField(readOnly: widget.readOnly, label: '11B. Place of Issue / जारी भएको स्थान', width: 340, fieldKey: 'passportField10', dataMap: _formData)),
+                PassportDivider(),
+                PassportSectionTitle('12. Address / ठेगाना'),
+                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: [
+                  PassportField(readOnly: widget.readOnly, label: '12A. Province / प्रदेश *', width: 180, fieldKey: 'passportField11', dataMap: _formData),
+                  PassportField(readOnly: widget.readOnly, label: '12B. District / जिल्ला *', width: 180, fieldKey: 'passportField12', dataMap: _formData),
                 ])),
-                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: const [
-                  PassportField(label: '12C. Rural Municipality / Municipality\nगाउँ/नगर पालिका *', width: 220),
-                  PassportField(label: '12D. Ward No.\nवडा नं.', width: 80),
+                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: [
+                  PassportField(readOnly: widget.readOnly, label: '12C. Rural Municipality / Municipality\nगाउँ/नगर पालिका *', width: 220, fieldKey: 'passportField13', dataMap: _formData),
+                  PassportField(readOnly: widget.readOnly, label: '12D. Ward No.\nवडा नं.', width: 80, fieldKey: 'passportField14', dataMap: _formData),
                 ])),
-                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: const [
-                  PassportField(label: '12E. Street/Village\nसडक/गाँउ *', width: 200),
-                  PassportField(label: '12F. House No.\nघर नं.', width: 100),
+                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: [
+                  PassportField(readOnly: widget.readOnly, label: '12E. Street/Village\nसडक/गाँउ *', width: 200, fieldKey: 'passportField15', dataMap: _formData),
+                  PassportField(readOnly: widget.readOnly, label: '12F. House No.\nघर नं.', width: 100, fieldKey: 'passportField16', dataMap: _formData),
                 ])),
-                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: const [
-                  PassportField(label: '12G. Email / इमेल', width: 220, keyboardType: TextInputType.emailAddress),
-                  PassportField(label: '14. Phone No. / फोन नं. *', width: 160, keyboardType: TextInputType.phone),
+                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: [
+                  PassportField(readOnly: widget.readOnly, label: '12G. Email / इमेल', width: 220, keyboardType: TextInputType.emailAddress, fieldKey: 'passportField17', dataMap: _formData),
+                  PassportField(readOnly: widget.readOnly, label: '14. Phone No. / फोन नं. *', width: 160, keyboardType: TextInputType.phone, fieldKey: 'passportField18', dataMap: _formData),
                 ])),
-                const PassportDivider(),
-                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: const [
-                  PassportField(label: '15. Father\'s Full Name / बाबुको नाम, थर *', width: 240),
-                  PassportField(label: '16. Mother\'s Full Name / आमाको नाम, थर *', width: 240),
+                PassportDivider(),
+                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: [
+                  PassportField(readOnly: widget.readOnly, label: '15. Father\'s Full Name / बाबुको नाम, थर *', width: 240, fieldKey: 'passportField19', dataMap: _formData),
+                  PassportField(readOnly: widget.readOnly, label: '16. Mother\'s Full Name / आमाको नाम, थर *', width: 240, fieldKey: 'passportField20', dataMap: _formData),
                 ])),
-                const PassportDivider(),
-                const PassportSectionTitle('17. Contact details in case of emergency / जरुरी परेका बखत सम्पर्क गर्ने व्यक्ति'),
-                _buildPadded(const PassportField(label: '17A. Full Name / नाम, थर *', width: 340)),
-                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: const [
-                  PassportField(label: '17C. Province / प्रदेश *', width: 180),
-                  PassportField(label: '17D. District / जिल्ला *', width: 180),
+                PassportDivider(),
+                PassportSectionTitle('17. Contact details in case of emergency / जरुरी परेका बखत सम्पर्क गर्ने व्यक्ति'),
+                _buildPadded(PassportField(readOnly: widget.readOnly, label: '17A. Full Name / नाम, थर *', width: 340, fieldKey: 'passportField21', dataMap: _formData)),
+                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: [
+                  PassportField(readOnly: widget.readOnly, label: '17C. Province / प्रदेश *', width: 180, fieldKey: 'passportField22', dataMap: _formData),
+                  PassportField(readOnly: widget.readOnly, label: '17D. District / जिल्ला *', width: 180, fieldKey: 'passportField23', dataMap: _formData),
                 ])),
-                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: const [
-                  PassportField(label: '17E. Municipality\nगाउँ/नगर पालिका *', width: 220),
-                  PassportField(label: '17F. Ward No.\nवडा नं.', width: 80),
+                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: [
+                  PassportField(readOnly: widget.readOnly, label: '17E. Municipality\nगाउँ/नगर पालिका *', width: 220, fieldKey: 'passportField24', dataMap: _formData),
+                  PassportField(readOnly: widget.readOnly, label: '17F. Ward No.\nवडा नं.', width: 80, fieldKey: 'passportField25', dataMap: _formData),
                 ])),
-                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: const [
-                  PassportField(label: '17G. Street/Village\nसडक/गाँउ *', width: 200),
-                  PassportField(label: '17H. House No.\nघर नं.', width: 100),
+                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: [
+                  PassportField(readOnly: widget.readOnly, label: '17G. Street/Village\nसडक/गाँउ *', width: 200, fieldKey: 'passportField26', dataMap: _formData),
+                  PassportField(readOnly: widget.readOnly, label: '17H. House No.\nघर नं.', width: 100, fieldKey: 'passportField27', dataMap: _formData),
                 ])),
-                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: const [
-                  PassportField(label: '18. Email / इमेल', width: 220, keyboardType: TextInputType.emailAddress),
-                  PassportField(label: '19. Phone No. / फोन नं.', width: 160, keyboardType: TextInputType.phone),
+                _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: [
+                  PassportField(readOnly: widget.readOnly, label: '18. Email / इमेल', width: 220, keyboardType: TextInputType.emailAddress, fieldKey: 'passportField28', dataMap: _formData),
+                  PassportField(readOnly: widget.readOnly, label: '19. Phone No. / फोन नं.', width: 160, keyboardType: TextInputType.phone, fieldKey: 'passportField29', dataMap: _formData),
                 ])),
-                const PassportDivider(),
+                PassportDivider(),
                 _buildDeclaration(),
-                const PassportDivider(),
+                PassportDivider(),
                 _buildAppointment(),
-                const PassportDivider(),
+                PassportDivider(),
                 _buildOfficeUse(),
                 const SizedBox(height: 8),
               ],
@@ -244,6 +273,22 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Widget formBody = Form(
+      key: _formKey,
+      child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildFormContent(),
+                _buildFooter(),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+    );
+
+    if (widget.asSubView) return formBody;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4FA),
       appBar: AppBar(
@@ -254,22 +299,7 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Form(
-        key: _formKey,
-        child: Screenshot(
-          controller: _screenshotController,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildFormContent(),
-                _buildFooter(),
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
-        ),
-      ),
+      body: formBody,
     );
   }
 
@@ -286,7 +316,7 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
-              children: const [
+              children: [
                 Text(
                   'अनुसूची-२\n(नियम ४ को उपनियम (५), नियम ६, नियम ९ को उपनियम (५), नियम १५ को उपनियम (५) र नियम १७ को उपनियम (२) सँग सम्बन्धित)\nराहदानी र यात्रा अनुमतिपत्रको विवरणको ढाँचा ख',
                   textAlign: TextAlign.center,
@@ -391,7 +421,7 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
               Radio<String>(
                 value: e.$1,
                 groupValue: _sex,
-                onChanged: (v) => setState(() => _sex = v!),
+                onChanged: widget.readOnly ? null : (v) { setState(() => _sex = v!); _formData['sex'] = v; },
                 activeColor: AppColors.teal,
               ),
               Text(e.$2,
@@ -421,14 +451,14 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
             Wrap(
               spacing: 20,
               runSpacing: 10,
-              children: const [
-                PassportField(
+              children: [
+                PassportField(readOnly: widget.readOnly, 
                   label:
                   'Applicant\'s Signature / Signature of Guardian (in case of minor)\nनिवेदकको सही / नाबालकको हकमा अभिभावकको सही *',
-                  width: 260,
+                  width: 260, fieldKey: 'passportField30', dataMap: _formData
                 ),
-                PassportField(
-                    label: 'Date / मिति *', width: 160),
+                PassportField(readOnly: widget.readOnly, 
+                    label: 'Date / मिति *', width: 160, fieldKey: 'passportField31', dataMap: _formData),
               ],
             ),
           ],
@@ -452,18 +482,18 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
           width: 260,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text('Appointment Details',
                   style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: AppColors.navy)),
               SizedBox(height: 8),
-              PassportField(
-                  label: 'Enrollment Center:', width: 200),
+              PassportField(readOnly: widget.readOnly, 
+                  label: 'Enrollment Center:', width: 200, fieldKey: 'passportField32', dataMap: _formData),
               SizedBox(height: 8),
-              PassportField(
-                  label: 'Date & Time:', width: 200),
+              PassportField(readOnly: widget.readOnly, 
+                  label: 'Date & Time:', width: 200, fieldKey: 'passportField33', dataMap: _formData),
             ],
           ),
         ),
@@ -498,37 +528,37 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
             // Application type
             _officeRow('Application Type:', [
               _officeCheck('Regular', _appRegular,
-                      (v) => setState(() => _appRegular = v!)),
+                      (v) { setState(() => _appRegular = v!); _formData['appRegular'] = v; }),
               _officeCheck('Emergency', _appEmergency,
-                      (v) => setState(() => _appEmergency = v!)),
+                      (v) { setState(() => _appEmergency = v!); _formData['appEmergency'] = v; }),
             ]),
 
             // Document status
             _officeRow('Document Status:', [
               _officeCheck('New', _docNew,
-                      (v) => setState(() => _docNew = v!)),
+                      (v) { setState(() => _docNew = v!); _formData['docNew'] = v; }),
               _officeCheck('Renewal', _docRenewal,
-                      (v) => setState(() => _docRenewal = v!)),
+                      (v) { setState(() => _docRenewal = v!); _formData['docRenewal'] = v; }),
               _officeCheck('Damaged', _docDamaged,
-                      (v) => setState(() => _docDamaged = v!)),
+                      (v) { setState(() => _docDamaged = v!); _formData['docDamaged'] = v; }),
               _officeCheck('Lost', _docLost,
-                      (v) => setState(() => _docLost = v!)),
+                      (v) { setState(() => _docLost = v!); _formData['docLost'] = v; }),
             ]),
 
             // Document type
             _officeRow('Document Type:', [
               _officeCheck('Ordinary (34 Pages)', _docOrd34,
-                      (v) => setState(() => _docOrd34 = v!)),
+                      (v) { setState(() => _docOrd34 = v!); _formData['docOrd34'] = v; }),
               _officeCheck('Ordinary (96 Pages)', _docOrd96,
-                      (v) => setState(() => _docOrd96 = v!)),
+                      (v) { setState(() => _docOrd96 = v!); _formData['docOrd96'] = v; }),
               _officeCheck('Temporary', _docTemp,
-                      (v) => setState(() => _docTemp = v!)),
+                      (v) { setState(() => _docTemp = v!); _formData['docTemp'] = v; }),
               _officeCheck('Travel Document', _docTravel,
-                      (v) => setState(() => _docTravel = v!)),
+                      (v) { setState(() => _docTravel = v!); _formData['docTravel'] = v; }),
               _officeCheck('Diplomatic', _docDiplomatic,
-                      (v) => setState(() => _docDiplomatic = v!)),
+                      (v) { setState(() => _docDiplomatic = v!); _formData['docDiplomatic'] = v; }),
               _officeCheck('Official', _docOfficial,
-                      (v) => setState(() => _docOfficial = v!)),
+                      (v) { setState(() => _docOfficial = v!); _formData['docOfficial'] = v; }),
             ]),
 
             const SizedBox(height: 12),
@@ -543,15 +573,15 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
             Wrap(
               spacing: 16,
               runSpacing: 10,
-              children: const [
-                PassportField(
-                    label: 'Name:', width: 160),
-                PassportField(
-                    label: 'Signature:', width: 140),
-                PassportField(
-                    label: 'Designation:', width: 160),
-                PassportField(
-                    label: 'Date:', width: 120),
+              children: [
+                PassportField(readOnly: widget.readOnly, 
+                    label: 'Name:', width: 160, fieldKey: 'passportField34', dataMap: _formData),
+                PassportField(readOnly: widget.readOnly, 
+                    label: 'Signature:', width: 140, fieldKey: 'passportField35', dataMap: _formData),
+                PassportField(readOnly: widget.readOnly, 
+                    label: 'Designation:', width: 160, fieldKey: 'passportField36', dataMap: _formData),
+                PassportField(readOnly: widget.readOnly, 
+                    label: 'Date:', width: 120, fieldKey: 'passportField37', dataMap: _formData),
               ],
             ),
           ],
@@ -661,7 +691,7 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
       children: [
         Checkbox(
           value: value,
-          onChanged: onChanged,
+          onChanged: widget.readOnly ? null : onChanged,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           activeColor: AppColors.teal,
         ),

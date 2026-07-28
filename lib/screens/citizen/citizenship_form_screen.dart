@@ -3,13 +3,17 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:smartsewa/widgets/citizenship_widgets.dart';
 import 'package:smartsewa/utils/app_colors.dart';
-import 'package:smartsewa/utils/pdf_capture_helper.dart';
-import 'package:screenshot/screenshot.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'citizenship_apply_screen.dart';
 
 class CitizenshipFormScreen extends StatefulWidget {
-  const CitizenshipFormScreen({super.key});
+  final bool readOnly;
+  final Map<String, dynamic>? initialData;
+  final bool asSubView;
+  final CitizenshipFormType formType;
+
+  const CitizenshipFormScreen({super.key, this.readOnly = false, this.initialData, this.asSubView = false, this.formType = CitizenshipFormType.citizenship});
 
   @override
   State<CitizenshipFormScreen> createState() =>
@@ -18,10 +22,21 @@ class CitizenshipFormScreen extends StatefulWidget {
 
 class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _screenshotController = ScreenshotController();
+  final Map<String, dynamic> _formData = {};
   String? _sex;
 
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      _formData.addAll(widget.initialData!);
+      _sex = _formData['sex'];
+    }
+  }
+
   Future<void> _submit() async {
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -29,18 +44,7 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
     );
 
     try {
-      final base64String = await captureFormAsPdfBase64(
-        controller: _screenshotController,
-        context: context,
-        formWidget: Container(
-          color: Colors.white,
-          padding: const EdgeInsets.all(20),
-          child: _buildFormContent(),
-        ),
-      );
-
       final user = FirebaseAuth.instance.currentUser;
-
       if (user == null) {
         throw Exception('You must be logged in to submit a form.');
       }
@@ -48,10 +52,10 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
       await FirebaseFirestore.instance.collection('applications').add({
         'applicant': 'Applicant',
         'citizenId': user.uid,
-        'title': 'Citizenship Application',
-        'type': 'Citizenship',
+        'title': widget.formType.appBarTitle + ' Application',
+        'type': widget.formType.englishLabel,
         'status': 'Pending',
-        'pdfBase64': base64String,
+        'formData': _formData,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -111,6 +115,11 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
   }
 
   Widget _buildFormContent() {
+    if (widget.formType == CitizenshipFormType.surnameChange) {
+      return _buildSurnameChangeContent();
+    } else if (widget.formType == CitizenshipFormType.migration) {
+      return _buildMigrationContent();
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -139,21 +148,9 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF0F4FA),
-      appBar: AppBar(
-        backgroundColor: AppColors.navy,
-        title: const Text(
-          'नागरिकताको प्रमाण-पत्र (अनुसूची-१)',
-          style: TextStyle(color: Colors.white, fontSize: 16),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: Form(
-        key: _formKey,
-        child: Screenshot(
-          controller: _screenshotController,
-          child: SingleChildScrollView(
+    Widget formBody = Form(
+      key: _formKey,
+      child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Container(
               decoration: BoxDecoration(
@@ -173,14 +170,27 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
                 children: [
                   _buildFormContent(),
                   const CitDivider(),
-                  _buildButtons(),
+                  if (!widget.readOnly) _buildButtons(),
                   const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
+    );
+
+    if (widget.asSubView) return formBody;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF0F4FA),
+      appBar: AppBar(
+        backgroundColor: AppColors.navy,
+        title: const Text(
+          'नागरिकताको प्रमाण-पत्र (अनुसूची-१)',
+          style: TextStyle(color: Colors.white, fontSize: 16),
         ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
+      body: formBody,
     );
   }
 
@@ -222,10 +232,10 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: 8,
           runSpacing: 8,
-          children: const [
-            CitField(hint: 'ठाउँ', width: 160),
+          children: [
+            CitField(readOnly: widget.readOnly, hint: 'ठाउँ', width: 160),
             Text(',', style: TextStyle(fontSize: 14)),
-            CitField(hint: 'जिल्ला', width: 160),
+            CitField(readOnly: widget.readOnly, hint: 'जिल्ला', width: 160),
             Text('जिल्ला', style: TextStyle(fontSize: 13)),
           ],
         ),
@@ -234,6 +244,65 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
   }
 
   // ── SUBJECT LINE ───────────────────────────────────────────────────────────
+
+  // ── Surname Change Content ───────────────────────────────────────────────
+  Widget _buildSurnameChangeContent() {
+    final ro = widget.readOnly;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Applicant Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.navy)),
+          const SizedBox(height: 12),
+          CitField(readOnly: ro, label: 'Old Name / पुरानो नाम', width: double.infinity, fieldKey: 'oldName', dataMap: _formData),
+          const SizedBox(height: 12),
+          CitField(readOnly: ro, label: 'New Name / नयाँ नाम', width: double.infinity, fieldKey: 'newName', dataMap: _formData),
+          const SizedBox(height: 12),
+          CitField(readOnly: ro, label: 'Citizenship No. / नागरिकता प्रमाणपत्र नं.', width: double.infinity, fieldKey: 'citNo', dataMap: _formData),
+          const SizedBox(height: 12),
+          Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [const Text('Issue Date: ', style: TextStyle(fontSize: 13)), const SizedBox(width: 8), CitDateEntry(readOnly: ro, fieldKey: 'issueDate', dataMap: _formData)]),
+          const SizedBox(height: 24),
+          const Text('Marriage Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.navy)),
+          const SizedBox(height: 12),
+          CitField(readOnly: ro, label: 'Spouse Name / पति-पत्नीको नाम', width: double.infinity, fieldKey: 'spouseName', dataMap: _formData),
+          const SizedBox(height: 12),
+          CitField(readOnly: ro, label: 'Spouse Citizenship No. / पतिको नागरिकता नं.', width: double.infinity, fieldKey: 'spouseCitNo', dataMap: _formData),
+          const SizedBox(height: 12),
+          Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [const Text('Marriage Date: ', style: TextStyle(fontSize: 13)), const SizedBox(width: 8), CitDateEntry(readOnly: ro, fieldKey: 'marriageDate', dataMap: _formData)]),
+        ],
+      ),
+    );
+  }
+
+  // ── Migration Content ──────────────────────────────────────────────────
+  Widget _buildMigrationContent() {
+    final ro = widget.readOnly;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Applicant Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.navy)),
+          const SizedBox(height: 12),
+          CitField(readOnly: ro, label: 'Full Name / पूरा नाम', width: double.infinity, fieldKey: 'fullName', dataMap: _formData),
+          const SizedBox(height: 12),
+          CitField(readOnly: ro, label: 'Citizenship No. / नागरिकता प्रमाणपत्र नं.', width: double.infinity, fieldKey: 'citNo', dataMap: _formData),
+          const SizedBox(height: 24),
+          const Text('Migration Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.navy)),
+          const SizedBox(height: 12),
+          CitField(readOnly: ro, label: 'Old Address (Prov, Dist, Mun, Ward)', width: double.infinity, fieldKey: 'oldAddress', dataMap: _formData),
+          const SizedBox(height: 12),
+          CitField(readOnly: ro, label: 'New Address (Prov, Dist, Mun, Ward)', width: double.infinity, fieldKey: 'newAddress', dataMap: _formData),
+          const SizedBox(height: 12),
+          CitField(readOnly: ro, label: 'Migration Cert No. / बसाइसराई दर्ता नं.', width: double.infinity, fieldKey: 'migCertNo', dataMap: _formData),
+          const SizedBox(height: 12),
+          Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [const Text('Migration Date: ', style: TextStyle(fontSize: 13)), const SizedBox(width: 8), CitDateEntry(readOnly: ro, fieldKey: 'migDate', dataMap: _formData)]),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSubjectLine() {
     return Center(
       child: Text(
@@ -250,7 +319,7 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
   Widget _buildBodyText() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         Text(
           'महोदय,\n\n    म बंशजको नाताले जन्मका आधारले नेपाली नागरिकता भएकोले देहायको विवरण खोली नेपाली नागरिकताको प्रमाण-पत्र पाउनको लागि सिफारिस साथ रु.१०१-को टिकट टाँसी यो निवेदन पत्र पेश गरेको छु । मैले यस अघि नेपाली नागरिकताको प्रमाण-पत्र लिएको छैन ।',
           style: TextStyle(fontSize: 13, height: 1.5),
@@ -269,7 +338,7 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CitSectionHeader('  व्यक्तिगत विवरण / Personal Details'),
+        CitSectionHeader('  व्यक्तिगत विवरण / Personal Details'),
         const SizedBox(height: 12),
         LayoutBuilder(builder: (ctx, constraints) {
           final wide = constraints.maxWidth > 600;
@@ -293,12 +362,14 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
   }
 
   Widget _buildLeftColumn() {
+    final ro = widget.readOnly;
+    final d = _formData;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CitLabeledRow(
+        CitLabeledRow(
           label: '१. नाम, घर (Full Name in block):',
-          field: CitField(),
+          field: CitField(readOnly: ro, fieldKey: 'fullName', dataMap: d),
         ),
 
         // Sex
@@ -325,14 +396,11 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
                     Radio<String>(
                       value: s,
                       groupValue: _sex,
-                      onChanged: (v) => setState(() => _sex = v),
+                      onChanged: ro ? null : (v) => setState(() { _sex = v; _formData['sex'] = v; }),
                       activeColor: AppColors.teal,
-                      materialTapTargetSize:
-                          MaterialTapTargetSize.shrinkWrap,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    Text(s,
-                        style: const TextStyle(
-                            fontSize: 13, color: AppColors.navy)),
+                    Text(s, style: const TextStyle(fontSize: 13, color: AppColors.navy)),
                     const SizedBox(width: 12),
                   ],
                 ),
@@ -340,23 +408,10 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
           ),
         ),
 
-        const CitLabeledRow(
-          label: '३. जन्म स्थान / Place of Birth:',
-          field: CitField(),
-        ),
-        const CitLabeledRow(
-          label: '४. स्थायी वास स्थान – जिल्ला:',
-          field: CitField(),
-        ),
-        const CitLabeledRow(
-          label: '    गा.वि.स. / VDC/Municipality:',
-          field: CitField(),
-        ),
-        const CitLabeledRow(
-          label: '    वडा नं.:',
-          field: CitField(
-              width: 100, keyboardType: TextInputType.number),
-        ),
+        CitLabeledRow(label: '३. जन्म स्थान / Place of Birth:', field: CitField(readOnly: ro, fieldKey: 'birthPlace', dataMap: d)),
+        CitLabeledRow(label: '४. स्थायी वास स्थान – जिल्ला:', field: CitField(readOnly: ro, fieldKey: 'permanentDistrict', dataMap: d)),
+        CitLabeledRow(label: '    गा.वि.स. / VDC/Municipality:', field: CitField(readOnly: ro, fieldKey: 'permanentMunicipality', dataMap: d)),
+        CitLabeledRow(label: '    वडा नं.:', field: CitField(readOnly: ro, fieldKey: 'permanentWard', dataMap: d, width: 100, keyboardType: TextInputType.number)),
 
         // DOB
         Padding(
@@ -365,14 +420,12 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
             crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 12,
             runSpacing: 8,
-            children: const [
-              SizedBox(
+            children: [
+              const SizedBox(
                 width: 240,
-                child: Text(
-                    '५. जन्म मिति (Date of Birth AD):',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.navy)),
+                child: Text('५. जन्म मिति (Date of Birth AD):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.navy)),
               ),
-              CitDateEntry(),
+              CitDateEntry(readOnly: ro, fieldKey: 'dob', dataMap: d),
             ],
           ),
         ),
@@ -381,33 +434,21 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
   }
 
   Widget _buildRightColumn() {
+    final ro = widget.readOnly;
+    final d = _formData;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        CitLabeledRow(
-            label: '६. बाबुको नाम, घर:',
-            field: CitField()),
-        CitLabeledRow(
-            label: '    ठेगाना:', field: CitField()),
-        CitLabeledRow(
-            label: '    नागरिकता नं.:', field: CitField()),
-        CitLabeledRow(
-            label: '७. आमाको नाम, घर:',
-            field: CitField()),
-        CitLabeledRow(
-            label: '    ठेगाना:', field: CitField()),
-        CitLabeledRow(
-            label: '    नागरिकता नं.:', field: CitField()),
-        CitLabeledRow(
-            label: '८. पति/पत्नीको नाम, घर:',
-            field: CitField()),
-        CitLabeledRow(
-            label: '    ठेगाना:', field: CitField()),
-        CitLabeledRow(
-            label: '    नागरिकता नं.:', field: CitField()),
-        CitLabeledRow(
-            label: '९. संरक्षकको नाम, घर:',
-            field: CitField()),
+      children: [
+        CitLabeledRow(label: '६. बाबुको नाम, घर:', field: CitField(readOnly: ro, fieldKey: 'fatherName', dataMap: d)),
+        CitLabeledRow(label: '    ठेगाना:', field: CitField(readOnly: ro, fieldKey: 'fatherAddress', dataMap: d)),
+        CitLabeledRow(label: '    नागरिकता नं.:', field: CitField(readOnly: ro, fieldKey: 'fatherCitNo', dataMap: d)),
+        CitLabeledRow(label: '७. आमाको नाम, घर:', field: CitField(readOnly: ro, fieldKey: 'motherName', dataMap: d)),
+        CitLabeledRow(label: '    ठेगाना:', field: CitField(readOnly: ro, fieldKey: 'motherAddress', dataMap: d)),
+        CitLabeledRow(label: '    नागरिकता नं.:', field: CitField(readOnly: ro, fieldKey: 'motherCitNo', dataMap: d)),
+        CitLabeledRow(label: '८. पति/पत्नीको नाम, घर:', field: CitField(readOnly: ro, fieldKey: 'spouseName', dataMap: d)),
+        CitLabeledRow(label: '    ठेगाना:', field: CitField(readOnly: ro, fieldKey: 'spouseAddress', dataMap: d)),
+        CitLabeledRow(label: '    नागरिकता नं.:', field: CitField(readOnly: ro, fieldKey: 'spouseCitNo', dataMap: d)),
+        CitLabeledRow(label: '९. संरक्षकको नाम, घर:', field: CitField(readOnly: ro, fieldKey: 'guardianName', dataMap: d)),
       ],
     );
   }
@@ -417,7 +458,7 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CitSectionHeader(
+        CitSectionHeader(
             '  औँठाको छाप / Thumbprint & Digital Signature'),
         const SizedBox(height: 12),
         LayoutBuilder(builder: (ctx, constraints) {
@@ -482,7 +523,7 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
   Widget _buildDigitalSignature() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         Text('निवेदकको डिजिटल दस्तखत / Digital Signature:',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.navy)),
         SizedBox(height: 8),
@@ -499,7 +540,7 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CitSectionHeader(
+        CitSectionHeader(
             '  गाउँ विकास समिति / उप/मह/नगरपालिकाको सिफारिस'),
         const SizedBox(height: 8),
         Container(
@@ -516,11 +557,11 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 spacing: 8,
                 runSpacing: 8,
-                children: const [
+                children: [
                   Text(
                       '...... गाउँ विकास समिति / नगरपालिका / उपमहानगरपालिका / महानगरपालिकाको वडा नं.',
                       style: TextStyle(fontSize: 13, height: 1.5)),
-                  CitField(width: 80, hint: 'वडा'),
+                  CitField(readOnly: widget.readOnly, width: 80, hint: 'वडा'),
                   Text('बस्ने', style: TextStyle(fontSize: 13)),
                 ],
               ),
@@ -529,16 +570,16 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 spacing: 8,
                 runSpacing: 8,
-                children: const [
+                children: [
                   Text('मा मिति', style: TextStyle(fontSize: 13)),
-                  CitDateEntry(),
+                  CitDateEntry(readOnly: widget.readOnly, ),
                   Text('मा जन्म भई हाल',
                       style: TextStyle(fontSize: 13)),
-                  CitField(width: 200, hint: 'हालको ठेगाना'),
+                  CitField(readOnly: widget.readOnly, width: 200, hint: 'हालको ठेगाना'),
                   Text(
                       'गाउँ विकास समिति / नगरपालिका / उपमहानगरपालिका / महानगरपालिका वडा नं.',
                       style: TextStyle(fontSize: 13)),
-                  CitField(width: 80, hint: 'वडा'),
+                  CitField(readOnly: widget.readOnly, width: 80, hint: 'वडा'),
                   Text('मा स्थायी रूपमा बसोबास गरी आएका',
                       style: TextStyle(fontSize: 13)),
                 ],
@@ -548,13 +589,13 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 spacing: 8,
                 runSpacing: 8,
-                children: const [
+                children: [
                   Text('लेखिएका श्रीमान्/श्रीमती',
                       style: TextStyle(fontSize: 13)),
-                  CitField(width: 200, hint: 'पति/पत्नीको नाम'),
+                  CitField(readOnly: widget.readOnly, width: 200, hint: 'पति/पत्नीको नाम'),
                   Text('को छोरा / छोरी / पत्नी वर्ष',
                       style: TextStyle(fontSize: 13)),
-                  CitField(
+                  CitField(readOnly: widget.readOnly, 
                     width: 80,
                     hint: 'उमेर',
                     keyboardType: TextInputType.number,
@@ -567,10 +608,10 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 spacing: 8,
                 runSpacing: 8,
-                children: const [
+                children: [
                   Text('श्री / सुश्री / श्रीमती',
                       style: TextStyle(fontSize: 13)),
-                  CitField(width: 240, hint: 'निवेदकको नाम'),
+                  CitField(readOnly: widget.readOnly, width: 240, hint: 'निवेदकको नाम'),
                   Text('लाई म राम्ररी चिन्दछु ।',
                       style: TextStyle(fontSize: 13)),
                 ],
@@ -585,11 +626,9 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
               Wrap(
                 spacing: 16,
                 runSpacing: 12,
-                children: const [
-                  CitField(label: 'मिति :-', width: 200),
-                  CitField(
-                      label: 'कार्यालयको नाम र छाप :',
-                      width: 260),
+                children: [
+                  CitField(readOnly: widget.readOnly, label: 'मिति :-', width: 200, fieldKey: 'vdcDate', dataMap: _formData),
+                  CitField(readOnly: widget.readOnly, label: 'कार्यालयको नाम र छाप :', width: 260, fieldKey: 'vdcOffice', dataMap: _formData),
                 ],
               ),
               const SizedBox(height: 16),
@@ -630,7 +669,7 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
                       fontWeight: FontWeight.bold,
                       color: AppColors.navy)),
               const SizedBox(height: 10),
-              const Wrap(
+              Wrap(
                 spacing: 16,
                 runSpacing: 12,
                 children: [
@@ -657,11 +696,9 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
         const SizedBox(height: 8),
         const CitSignaturePad(width: double.infinity, height: 60),
         const SizedBox(height: 12),
-        const CitLabeledRow(
-            label: 'नाम, घर :', field: CitField()),
+        CitLabeledRow(label: 'नाम, घर :', field: CitField(readOnly: widget.readOnly, fieldKey: 'vdcSignName', dataMap: _formData)),
         const SizedBox(height: 8),
-        const CitLabeledRow(
-            label: 'पद :', field: CitField()),
+        CitLabeledRow(label: 'पद :', field: CitField(readOnly: widget.readOnly, fieldKey: 'vdcSignPost', dataMap: _formData)),
       ],
     );
   }
@@ -671,15 +708,15 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CitSectionHeader('  निर्णय / Decision'),
+        CitSectionHeader('  निर्णय / Decision'),
         const SizedBox(height: 12),
         Wrap(
           spacing: 20,
           runSpacing: 12,
           crossAxisAlignment: WrapCrossAlignment.center,
-          children: const [
-            CitField(label: 'वितरित ना:प्र.प.नं.:', width: 220),
-            CitField(label: 'मिति :', width: 200),
+          children: [
+            CitField(readOnly: widget.readOnly, label: 'वितरित ना:प्र.प.नं.:', width: 220, fieldKey: 'citizenshipNo', dataMap: _formData),
+            CitField(readOnly: widget.readOnly, label: 'मिति :', width: 200, fieldKey: 'issuedDate', dataMap: _formData),
           ],
         ),
         const SizedBox(height: 16),
@@ -721,7 +758,7 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const CitSectionHeader(
+        CitSectionHeader(
             '  संलग्न कागजातहरू / Supporting Documents (Optional)'),
         const SizedBox(height: 8),
         const Text(
@@ -729,7 +766,7 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
           style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.4),
         ),
         const SizedBox(height: 16),
-        const Wrap(
+        Wrap(
           spacing: 16,
           runSpacing: 16,
           children: [
@@ -841,7 +878,7 @@ class _DocSlotState extends State<_DocSlot> {
                   color: _uploaded ? AppColors.teal : Colors.grey.shade300, width: 1.5),
             ),
             child: _uploaded
-                ? const Column(
+                ? Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.check_circle,
@@ -854,7 +891,7 @@ class _DocSlotState extends State<_DocSlot> {
                               color: AppColors.teal)),
                     ],
                   )
-                : const Column(
+                : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.attach_file,

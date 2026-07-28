@@ -50,6 +50,9 @@ class CitField extends StatelessWidget {
   final String? label;
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
+  final String? fieldKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
 
   const CitField({
     super.key,
@@ -58,11 +61,21 @@ class CitField extends StatelessWidget {
     this.label,
     this.keyboardType,
     this.inputFormatters,
+    this.fieldKey,
+    this.dataMap,
+    this.readOnly = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final field = TextFormField(
+      readOnly: readOnly,
+      initialValue: (dataMap != null && fieldKey != null) ? dataMap![fieldKey] : null,
+      onChanged: (val) {
+        if (dataMap != null && fieldKey != null) {
+          dataMap![fieldKey!] = val;
+        }
+      },
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
       decoration: InputDecoration(
@@ -136,32 +149,48 @@ class CitLabeledRow extends StatelessWidget {
 
 // ── Date entry (DD / MM / YYYY) ────────────────────────────────────────────
 class CitDateEntry extends StatelessWidget {
-  const CitDateEntry({super.key});
+  final String? fieldKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
+
+  const CitDateEntry({
+    super.key,
+    this.fieldKey,
+    this.dataMap,
+    this.readOnly = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _dateBox('DD', 50),
+        _dateBox('DD', 50, 'dd'),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 4),
           child: Text(' / ', style: TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold)),
         ),
-        _dateBox('MM', 50),
+        _dateBox('MM', 50, 'mm'),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 4),
           child: Text(' / ', style: TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold)),
         ),
-        _dateBox('YYYY', 70),
+        _dateBox('YYYY', 70, 'yyyy'),
       ],
     );
   }
 
-  Widget _dateBox(String hint, double w) {
+  Widget _dateBox(String hint, double w, String suffix) {
     return SizedBox(
       width: w,
       child: TextFormField(
+        readOnly: readOnly,
+        initialValue: (dataMap != null && fieldKey != null) ? dataMap!['${fieldKey}_$suffix'] : null,
+        onChanged: (val) {
+          if (dataMap != null && fieldKey != null) {
+            dataMap!['${fieldKey}_$suffix'] = val;
+          }
+        },
         keyboardType: TextInputType.number,
         textAlign: TextAlign.center,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],

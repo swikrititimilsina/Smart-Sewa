@@ -87,6 +87,9 @@ class LabeledField extends StatelessWidget {
   final double width;
   final bool required;
   final TextEditingController? controller;
+  final String? fieldKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
 
   const LabeledField({
     super.key,
@@ -94,6 +97,9 @@ class LabeledField extends StatelessWidget {
     this.width = double.infinity,
     this.required = false,
     this.controller,
+    this.fieldKey,
+    this.dataMap,
+    this.readOnly = false,
   });
 
   @override
@@ -121,6 +127,13 @@ class LabeledField extends StatelessWidget {
           const SizedBox(height: 6),
           TextFormField(
             controller: controller,
+            readOnly: readOnly,
+            initialValue: (controller == null && dataMap != null && fieldKey != null) ? dataMap![fieldKey] : null,
+            onChanged: (val) {
+              if (dataMap != null && fieldKey != null) {
+                dataMap![fieldKey!] = val;
+              }
+            },
             decoration: InputDecoration(
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
@@ -158,11 +171,18 @@ class DistrictDropdown extends StatefulWidget {
   final double width;
   final bool required;
 
+  final String? fieldKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
+
   const DistrictDropdown({
     super.key,
     required this.label,
     this.width = double.infinity,
     this.required = false,
+    this.fieldKey,
+    this.dataMap,
+    this.readOnly = false,
   });
 
   @override
@@ -171,6 +191,14 @@ class DistrictDropdown extends StatefulWidget {
 
 class _DistrictDropdownState extends State<DistrictDropdown> {
   String? _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.dataMap != null && widget.fieldKey != null) {
+      _selected = widget.dataMap![widget.fieldKey];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -225,7 +253,14 @@ class _DistrictDropdownState extends State<DistrictDropdown> {
             items: kNepalDistricts
                 .map((d) => DropdownMenuItem(value: d, child: Text(d)))
                 .toList(),
-            onChanged: (v) => setState(() => _selected = v),
+            onChanged: widget.readOnly
+                ? null
+                : (v) {
+                    setState(() => _selected = v);
+                    if (widget.dataMap != null && widget.fieldKey != null) {
+                      widget.dataMap![widget.fieldKey!] = v;
+                    }
+                  },
             validator: widget.required
                 ? (v) => (v == null || v.isEmpty) ? 'आवश्यक छ' : null
                 : null,
@@ -243,10 +278,17 @@ class ProvinceDropdown extends StatefulWidget {
   final String label;
   final bool required;
 
+  final String? fieldKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
+
   const ProvinceDropdown({
     super.key,
     required this.label,
     this.required = false,
+    this.fieldKey,
+    this.dataMap,
+    this.readOnly = false,
   });
 
   @override
@@ -255,6 +297,14 @@ class ProvinceDropdown extends StatefulWidget {
 
 class _ProvinceDropdownState extends State<ProvinceDropdown> {
   String? _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.dataMap != null && widget.fieldKey != null) {
+      _selected = widget.dataMap![widget.fieldKey];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -307,7 +357,14 @@ class _ProvinceDropdownState extends State<ProvinceDropdown> {
           items: kNepalProvinces
               .map((p) => DropdownMenuItem(value: p, child: Text(p)))
               .toList(),
-          onChanged: (v) => setState(() => _selected = v),
+            onChanged: widget.readOnly
+                ? null
+                : (v) {
+                    setState(() => _selected = v);
+                    if (widget.dataMap != null && widget.fieldKey != null) {
+                      widget.dataMap![widget.fieldKey!] = v;
+                    }
+                  },
           validator: widget.required
               ? (v) => (v == null || v.isEmpty) ? 'आवश्यक छ' : null
               : null,
@@ -322,13 +379,29 @@ class _ProvinceDropdownState extends State<ProvinceDropdown> {
 // ─────────────────────────────────────────────────────────────────────────────
 class DateEntryWidget extends StatelessWidget {
   final String label;
+  final String? fieldKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
 
-  const DateEntryWidget({super.key, required this.label});
+  const DateEntryWidget({
+    super.key,
+    required this.label,
+    this.fieldKey,
+    this.dataMap,
+    this.readOnly = false,
+  });
 
-  Widget _box(String hint) {
+  Widget _box(String hint, String suffix) {
     return SizedBox(
       width: hint == 'YYYY' ? 70 : 50,
       child: TextFormField(
+        readOnly: readOnly,
+        initialValue: (dataMap != null && fieldKey != null) ? dataMap!['${fieldKey}_$suffix'] : null,
+        onChanged: (val) {
+          if (dataMap != null && fieldKey != null) {
+            dataMap!['${fieldKey}_$suffix'] = val;
+          }
+        },
         textAlign: TextAlign.center,
         keyboardType: TextInputType.number,
         maxLength: hint == 'YYYY' ? 4 : 2,
@@ -369,11 +442,11 @@ class DateEntryWidget extends StatelessWidget {
         if (label.isNotEmpty)
           Text(label,
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy)),
-        _box('DD'),
+        _box('DD', 'dd'),
         const Text('/', style: TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold)),
-        _box('MM'),
+        _box('MM', 'mm'),
         const Text('/', style: TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold)),
-        _box('YYYY'),
+        _box('YYYY', 'yyyy'),
       ],
     );
   }
@@ -384,8 +457,17 @@ class DateEntryWidget extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class AddressBlock extends StatelessWidget {
   final String title;
+  final String? prefixKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
 
-  const AddressBlock({super.key, required this.title});
+  const AddressBlock({
+    super.key,
+    required this.title,
+    this.prefixKey,
+    this.dataMap,
+    this.readOnly = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -401,24 +483,21 @@ class AddressBlock extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        const ProvinceDropdown(label: 'प्रदेश:'),
+        ProvinceDropdown(label: 'प्रदेश:', fieldKey: prefixKey != null ? '${prefixKey}_province' : null, dataMap: dataMap, readOnly: readOnly),
         const SizedBox(height: 12),
-        const DistrictDropdown(label: 'जिल्ला:', width: double.infinity),
+        DistrictDropdown(label: 'जिल्ला:', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_district' : null, dataMap: dataMap, readOnly: readOnly),
         const SizedBox(height: 12),
-        const LabeledField(
-            label: 'गाउँपालिका/नगरपालिका:', width: double.infinity),
+        LabeledField(label: 'गाउँपालिका/नगरपालिका:', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_municipality' : null, dataMap: dataMap, readOnly: readOnly),
         const SizedBox(height: 12),
         Row(
-          children: const [
-            Expanded(
-                child: LabeledField(label: 'वडा नं:', width: double.infinity)),
-            SizedBox(width: 16),
-            Expanded(
-                child: LabeledField(label: 'टोल:', width: double.infinity)),
+          children: [
+            Expanded(child: LabeledField(label: 'वडा नं:', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_ward' : null, dataMap: dataMap, readOnly: readOnly)),
+            const SizedBox(width: 16),
+            Expanded(child: LabeledField(label: 'टोल:', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_tole' : null, dataMap: dataMap, readOnly: readOnly)),
           ],
         ),
         const SizedBox(height: 12),
-        const LabeledField(label: 'घर नं:', width: double.infinity),
+        LabeledField(label: 'घर नं:', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_house' : null, dataMap: dataMap, readOnly: readOnly),
       ],
     );
   }
@@ -430,8 +509,20 @@ class AddressBlock extends StatelessWidget {
 class NameRow extends StatelessWidget {
   final String nepLabel;
   final String engLabel;
+  final String? nepKey;
+  final String? engKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
 
-  const NameRow({super.key, required this.nepLabel, required this.engLabel});
+  const NameRow({
+    super.key,
+    required this.nepLabel,
+    required this.engLabel,
+    this.nepKey,
+    this.engKey,
+    this.dataMap,
+    this.readOnly = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -443,17 +534,17 @@ class NameRow extends StatelessWidget {
           if (isWide) {
             return Row(
               children: [
-                Expanded(child: LabeledField(label: '$nepLabel (नेपाली):', width: double.infinity)),
+                Expanded(child: LabeledField(label: '$nepLabel (नेपाली):', width: double.infinity, fieldKey: nepKey, dataMap: dataMap, readOnly: readOnly)),
                 const SizedBox(width: 16),
-                Expanded(child: LabeledField(label: '$engLabel (English):', width: double.infinity)),
+                Expanded(child: LabeledField(label: '$engLabel (English):', width: double.infinity, fieldKey: engKey, dataMap: dataMap, readOnly: readOnly)),
               ],
             );
           } else {
             return Column(
               children: [
-                LabeledField(label: '$nepLabel (नेपाली):', width: double.infinity),
+                LabeledField(label: '$nepLabel (नेपाली):', width: double.infinity, fieldKey: nepKey, dataMap: dataMap, readOnly: readOnly),
                 const SizedBox(height: 12),
-                LabeledField(label: '$engLabel (English):', width: double.infinity),
+                LabeledField(label: '$engLabel (English):', width: double.infinity, fieldKey: engKey, dataMap: dataMap, readOnly: readOnly),
               ],
             );
           }

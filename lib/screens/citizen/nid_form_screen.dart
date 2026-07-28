@@ -10,7 +10,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class NIDFormScreen extends StatefulWidget {
-  const NIDFormScreen({super.key});
+  final bool readOnly;
+  final Map<String, dynamic>? initialData;
+  final bool asSubView;
+
+  const NIDFormScreen({
+    super.key,
+    this.readOnly = false,
+    this.initialData,
+    this.asSubView = false,
+  });
 
   @override
   State<NIDFormScreen> createState() => _NIDFormScreenState();
@@ -34,6 +43,20 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
   final _citizenshipKey = GlobalKey<DocUploadTileState>();
   final _parentCitizenshipKey = GlobalKey<DocUploadTileState>();
 
+  // ── JSON Form Data Map ──
+  final Map<String, dynamic> _formData = {};
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      _formData.addAll(widget.initialData!);
+      _natType = _formData['natType'];
+      _gender = _formData['gender'];
+      _marital = _formData['maritalStatus'];
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // Validate everything, then show the confirm dialog
   // ─────────────────────────────────────────────────────────────────────────
@@ -48,16 +71,6 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
       );
 
       try {
-        final base64String = await captureFormAsPdfBase64(
-          controller: _screenshotController,
-          context: context,
-          formWidget: Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
-            child: _buildFormContent(isPdfCapture: true),
-          ),
-        );
-
         final user = FirebaseAuth.instance.currentUser;
 
         if (user == null) {
@@ -65,12 +78,12 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
         }
 
         await FirebaseFirestore.instance.collection('applications').add({
-          'applicant': 'Applicant',
+          'applicant': '${_formData['firstName_eng'] ?? ''} ${_formData['lastName_eng'] ?? ''}'.trim().isNotEmpty ? '${_formData['firstName_eng'] ?? ''} ${_formData['lastName_eng'] ?? ''}' : 'Applicant',
           'citizenId': user.uid,
           'title': 'NID Registration',
           'type': 'NID Registration',
           'status': 'Pending',
-          'pdfBase64': base64String,
+          'formData': _formData,
           'createdAt': FieldValue.serverTimestamp(),
         });
 
@@ -188,6 +201,7 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
       _natTypeError = false;
       _genderError = false;
       _maritalError = false;
+      _formData.clear();
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -217,7 +231,7 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
         RepaintBoundary(child: _buildSection1()),
 
         // ── Section 2 ────────────────────────────────────────────────
-        RepaintBoundary(child: _buildSection2()),
+        RepaintBoundary(child: _buildSection2(isPdfCapture: isPdfCapture)),
 
         // ── Section 3 ────────────────────────────────────────────────
         RepaintBoundary(child: _buildSection3()),
@@ -277,6 +291,33 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Widget formBody = Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+              ]
+            ),
+            child: Column(
+              children: [
+                _buildFormContent(isPdfCapture: widget.readOnly),
+                if (!widget.readOnly) _buildButtons(),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (widget.asSubView) return formBody;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4FA),
       appBar: AppBar(
@@ -287,33 +328,7 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Form(
-        key: _formKey,
-        child: Screenshot(
-          controller: _screenshotController,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
-                ]
-              ),
-              child: Column(
-                children: [
-                  _buildFormContent(),
-                  _buildButtons(),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          ],
-        ),
-        ),
-      ),
+      body: formBody,
     );
   }
 
@@ -532,7 +547,7 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
   // ─────────────────────────────────────────────────────────────────────────
   // Section 2 — Personal details
   // ─────────────────────────────────────────────────────────────────────────
-  Widget _buildSection2() {
+  Widget _buildSection2({bool isPdfCapture = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -547,11 +562,11 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
-              const Wrap(spacing: 12, runSpacing: 8, children: [
+              Wrap(spacing: 12, runSpacing: 8, children: [
                 LabeledField(
-                    label: 'पहिलो नाम:', width: 120, required: true),
-                LabeledField(label: 'बीचको नाम:', width: 120),
-                LabeledField(label: 'थर:', width: 120, required: true),
+                    label: 'पहिलो नाम:', width: 120, required: true, fieldKey: 'firstName_nep', dataMap: _formData, readOnly: isPdfCapture),
+                LabeledField(label: 'बीचको नाम:', width: 120, fieldKey: 'middleName_nep', dataMap: _formData, readOnly: isPdfCapture),
+                LabeledField(label: 'थर:', width: 120, required: true, fieldKey: 'lastName_nep', dataMap: _formData, readOnly: isPdfCapture),
               ]),
               const SizedBox(height: 8),
               const Text(
@@ -559,33 +574,39 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
-              const Wrap(spacing: 12, runSpacing: 8, children: [
+              Wrap(spacing: 12, runSpacing: 8, children: [
                 LabeledField(
-                    label: 'First Name:', width: 120, required: true),
-                LabeledField(label: 'Middle Name:', width: 120),
+                    label: 'First Name:', width: 120, required: true, fieldKey: 'firstName_eng', dataMap: _formData, readOnly: isPdfCapture),
+                LabeledField(label: 'Middle Name:', width: 120, fieldKey: 'middleName_eng', dataMap: _formData, readOnly: isPdfCapture),
                 LabeledField(
-                    label: 'Last Name:', width: 120, required: true),
+                    label: 'Last Name:', width: 120, required: true, fieldKey: 'lastName_eng', dataMap: _formData, readOnly: isPdfCapture),
               ]),
               const SizedBox(height: 8),
-              const Wrap(spacing: 16, runSpacing: 8, children: [
-                DateEntryWidget(label: 'जन्म मिति (वि.सं.) :'),
-                DateEntryWidget(label: 'Date of Birth (AD) :'),
+              Wrap(spacing: 16, runSpacing: 8, children: [
+                DateEntryWidget(label: 'जन्म मिति (वि.सं.) :', fieldKey: 'dob_bs', dataMap: _formData, readOnly: isPdfCapture),
+                DateEntryWidget(label: 'Date of Birth (AD) :', fieldKey: 'dob_ad', dataMap: _formData, readOnly: isPdfCapture),
               ]),
               const SizedBox(height: 8),
-              Wrap(spacing: 12, runSpacing: 8, children: const [
+              Wrap(spacing: 12, runSpacing: 8, children: [
                 LabeledField(
                   label: 'नागरिकता प्रमाणपत्र नं.:',
                   width: 130,
                   required: true,
+                  fieldKey: 'citizenship_no',
+                  dataMap: _formData,
+                  readOnly: isPdfCapture,
                 ),
                 DistrictDropdown(
                   label: 'जारी जिल्ला:',
                   width: 150,
                   required: true,
+                  fieldKey: 'citizenship_district',
+                  dataMap: _formData,
+                  readOnly: isPdfCapture,
                 ),
               ]),
               const SizedBox(height: 4),
-              const DateEntryWidget(label: 'जारी मिति:'),
+              DateEntryWidget(label: 'जारी मिति:', fieldKey: 'citizenship_date', dataMap: _formData, readOnly: isPdfCapture),
               const SizedBox(height: 8),
 
               // ── नागरिकताको किसिम (required radio) ──

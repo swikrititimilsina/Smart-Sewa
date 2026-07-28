@@ -1,14 +1,21 @@
-import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:smartsewa/widgets/birth_widgets.dart';
 import 'package:smartsewa/utils/app_colors.dart';
-import 'package:smartsewa/utils/pdf_capture_helper.dart';
-import 'package:screenshot/screenshot.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class BirthFormScreen extends StatefulWidget {
-  const BirthFormScreen({super.key});
+  final bool readOnly;
+  final Map<String, dynamic>? initialData;
+  final bool asSubView;
+
+  const BirthFormScreen({
+    super.key,
+    this.readOnly = false,
+    this.initialData,
+    this.asSubView = false,
+  });
 
   @override
   State<BirthFormScreen> createState() => _BirthFormScreenState();
@@ -16,7 +23,7 @@ class BirthFormScreen extends StatefulWidget {
 
 class _BirthFormScreenState extends State<BirthFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _screenshotController = ScreenshotController();
+  final Map<String, dynamic> _formData = {};
 
   // Radio state
   String? _gender;
@@ -32,7 +39,18 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
   bool _placeOther = false;
   bool _weightUnknown = false;
 
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      _formData.addAll(widget.initialData!);
+      _birthType = _formData['birthType'];
+    }
+  }
+
   Future<void> _submit() async {
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -40,35 +58,7 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
     );
 
     try {
-      final base64String = await captureFormAsPdfBase64(
-        controller: _screenshotController,
-        context: context,
-        formWidget: Container(
-          color: const Color(0xFFF0F4FA),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16),
-                    _buildSection1(),
-                    _buildSection2(),
-                    _buildSection3(),
-                    _buildSignatory(),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-
       final user = FirebaseAuth.instance.currentUser;
-
       if (user == null) {
         throw Exception('You must be logged in to submit a form.');
       }
@@ -76,10 +66,10 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
       await FirebaseFirestore.instance.collection('applications').add({
         'applicant': 'Applicant',
         'citizenId': user.uid,
-        'title': 'Birth Registration',
+        'title': 'Birth Registration Application',
         'type': 'Birth Registration',
         'status': 'Pending',
-        'pdfBase64': base64String,
+        'formData': _formData,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -123,47 +113,46 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Widget formBody = Form(
+      key: _formKey,
+      child: SingleChildScrollView(
+        child: Container(
+          color: const Color(0xFFF0F4FA),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    _buildSection1(),
+                    _buildSection2(),
+                    _buildSection3(),
+                    _buildSignatory(),
+                    if (!widget.readOnly) _buildButtons(),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (widget.asSubView) return formBody;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4FA),
       appBar: AppBar(
         backgroundColor: AppColors.navy,
-        title: const Text(
-          'जन्मको सूचना फाराम',
-          style: TextStyle(color: Colors.white, fontSize: 16),
-        ),
+        title: const Text('जन्म दर्ता / Birth Registration',
+            style: TextStyle(color: Colors.white, fontSize: 16)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Form(
-        key: _formKey,
-        child: Screenshot(
-          controller: _screenshotController,
-          child: SingleChildScrollView(
-            child: Container(
-              color: const Color(0xFFF0F4FA),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 16),
-                        _buildSection1(),
-                        _buildSection2(),
-                        _buildSection3(),
-                        _buildSignatory(),
-                        _buildButtons(),
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+      body: formBody,
     );
   }
 
@@ -207,24 +196,24 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                 const Text('श्री स्थानीय पञ्जिकाधिकारीज्यू,',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
-                const Row(
+                Row(
                   children: [
-                    BirthLabeledField(label: 'वडा नं.', width: 80),
+                    BirthLabeledField(readOnly: widget.readOnly, label: 'वडा नं.', width: 80, fieldKey: 'wardNo', dataMap: _formData),
                     SizedBox(width: 16),
-                    BirthLabeledField(label: 'ग.वि.स./न.पा.', width: 160, isExpanded: true),
+                    BirthLabeledField(readOnly: widget.readOnly, label: 'ग.वि.स./न.पा.', width: 160, isExpanded: true, fieldKey: 'municipality', dataMap: _formData),
                   ],
                 ),
                 const SizedBox(height: 10),
-                const BirthLabeledField(label: 'जिल्ला:', width: 200),
+                BirthLabeledField(readOnly: widget.readOnly, label: 'जिल्ला:', width: 200, fieldKey: 'district', dataMap: _formData),
                 const SizedBox(height: 16),
-                const Wrap(
+                Wrap(
                   crossAxisAlignment: WrapCrossAlignment.center,
                   spacing: 8,
                   runSpacing: 8,
                   children: [
                     Text('निम्न लिखित विवरण खुलाई मेरो',
                         style: TextStyle(fontSize: 13)),
-                    BirthLabeledField(label: '', width: 180, hint: 'सम्बन्ध'),
+                    BirthLabeledField(readOnly: widget.readOnly, label: '', width: 180, hint: 'सम्बन्ध', fieldKey: 'informantRelation', dataMap: _formData),
                     Text('को जन्मको सूचना दिन आएको छु ।',
                         style: TextStyle(fontSize: 13)),
                   ],
@@ -248,20 +237,20 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Nepali name
-          const NameRowBirth(nepLabel: ''),
+          NameRowBirth(readOnly: widget.readOnly, nepLabel: '', prefixKey: 'childName', dataMap: _formData),
           const SizedBox(height: 12),
           // English name
-          const NameRowBirthEn(),
+          NameRowBirthEn(readOnly: widget.readOnly, prefixKey: 'childNameEn', dataMap: _formData),
           const SizedBox(height: 16),
 
           // DOB
-          const Wrap(
+          Wrap(
             spacing: 16,
             runSpacing: 16,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              BirthDateEntry(label: 'जन्म मिति वि.सं.:'),
-              BirthDateEntry(label: 'ई.सं.:'),
+              BirthDateEntry(readOnly: widget.readOnly, label: 'जन्म मिति वि.सं.:', fieldKey: 'dobBS', dataMap: _formData),
+              BirthDateEntry(readOnly: widget.readOnly, label: 'ई.सं.:', fieldKey: 'dobAD', dataMap: _formData),
             ],
           ),
           const SizedBox(height: 16),
@@ -314,12 +303,12 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                   color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const Row(children: [
-            BirthLabeledField(label: 'प्रदेश:', width: 100, isExpanded: true),
-            SizedBox(width: 12),
-            BirthLabeledField(label: 'ग.पा./न.पा.:', width: 140, isExpanded: true),
-            SizedBox(width: 12),
-            BirthLabeledField(label: 'वडा नं.:', width: 60),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            BirthLabeledField(readOnly: widget.readOnly, label: 'प्रदेश:', width: 100, isExpanded: true, fieldKey: 'birthProvince', dataMap: _formData),
+            const SizedBox(width: 12),
+            BirthLabeledField(readOnly: widget.readOnly, label: 'ग.पा./न.पा.:', width: 140, isExpanded: true, fieldKey: 'birthMunicipality', dataMap: _formData),
+            const SizedBox(width: 12),
+            BirthLabeledField(readOnly: widget.readOnly, label: 'वडा नं.:', width: 60, fieldKey: 'birthWard', dataMap: _formData),
           ]),
           const SizedBox(height: 16),
 
@@ -330,12 +319,12 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                   color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const Row(children: [
-            BirthLabeledField(label: 'देश/Country:', width: 120, isExpanded: true),
-            SizedBox(width: 12),
-            BirthLabeledField(label: 'Province/State:', width: 120, isExpanded: true),
-            SizedBox(width: 12),
-            BirthLabeledField(label: 'Local Address:', width: 150, isExpanded: true),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            BirthLabeledField(readOnly: widget.readOnly, label: 'देश/Country:', width: 120, isExpanded: true, fieldKey: 'abroadCountry', dataMap: _formData),
+            const SizedBox(width: 12),
+            BirthLabeledField(readOnly: widget.readOnly, label: 'Province/State:', width: 120, isExpanded: true, fieldKey: 'abroadState', dataMap: _formData),
+            const SizedBox(width: 12),
+            BirthLabeledField(readOnly: widget.readOnly, label: 'Local Address:', width: 150, isExpanded: true, fieldKey: 'abroadLocalAddr', dataMap: _formData),
           ]),
           const SizedBox(height: 16),
 
@@ -365,8 +354,7 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
             spacing: 12,
             runSpacing: 8,
             children: [
-              const BirthLabeledField(
-                  label: 'बच्चा जन्मेको तौल (ग्राम):', width: 100),
+              BirthLabeledField(readOnly: widget.readOnly, label: 'बच्चा जन्मेको तौल (ग्राम):', width: 100, fieldKey: 'birthWeight', dataMap: _formData),
               const Text('ग्राम',
                   style: TextStyle(fontSize: 13, color: Colors.grey)),
               Row(
@@ -406,7 +394,7 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          const BirthLabeledField(label: '☐ अन्य/Other:', width: 200),
+          BirthLabeledField(readOnly: widget.readOnly, label: '☐ अन्य/Other:', width: 200, fieldKey: 'otherAttendant', dataMap: _formData),
           const SizedBox(height: 16),
 
           // Birth process
@@ -446,9 +434,9 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                   color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const NameRowBirth(nepLabel: ''),
+          NameRowBirth(readOnly: widget.readOnly, nepLabel: '', prefixKey: 'grandfatherName', dataMap: _formData),
           const SizedBox(height: 8),
-          const NameRowBirthEn(),
+          NameRowBirthEn(readOnly: widget.readOnly, prefixKey: 'grandfatherNameEn', dataMap: _formData),
           const BirthFormDivider(),
           const Text('ख) बज्यैको नाम:-',
               style: TextStyle(
@@ -456,9 +444,9 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                   color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const NameRowBirth(nepLabel: ''),
+          NameRowBirth(readOnly: widget.readOnly, nepLabel: '', prefixKey: 'grandmotherName', dataMap: _formData),
           const SizedBox(height: 8),
-          const NameRowBirthEn(),
+          NameRowBirthEn(readOnly: widget.readOnly, prefixKey: 'grandmotherNameEn', dataMap: _formData),
         ],
       ),
     );
@@ -478,9 +466,9 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                   color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const NameRowBirth(nepLabel: ''),
+          NameRowBirth(readOnly: widget.readOnly, nepLabel: '', prefixKey: 'fatherName', dataMap: _formData),
           const SizedBox(height: 8),
-          const NameRowBirthEn(),
+          NameRowBirthEn(readOnly: widget.readOnly, prefixKey: 'fatherNameEn', dataMap: _formData),
           const BirthFormDivider(),
 
           // Mother
@@ -490,9 +478,9 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                   color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const NameRowBirth(nepLabel: ''),
+          NameRowBirth(readOnly: widget.readOnly, nepLabel: '', prefixKey: 'motherName', dataMap: _formData),
           const SizedBox(height: 8),
-          const NameRowBirthEn(),
+          NameRowBirthEn(readOnly: widget.readOnly, prefixKey: 'motherNameEn', dataMap: _formData),
           const BirthFormDivider(),
 
           // Details table
@@ -628,23 +616,23 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
           const Text('सूचकको नाम / Informant\'s Name:',
               style: TextStyle(fontSize: 13, color: AppColors.navy, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const NameRowBirth(nepLabel: ''),
+          NameRowBirth(readOnly: widget.readOnly, nepLabel: '', prefixKey: 'informantName', dataMap: _formData),
           const SizedBox(height: 8),
-          const NameRowBirthEn(),
+          NameRowBirthEn(readOnly: widget.readOnly, prefixKey: 'informantNameEn', dataMap: _formData),
           const SizedBox(height: 16),
 
           // Relationship
-          const BirthLabeledField(
+          BirthLabeledField(readOnly: widget.readOnly, 
               label: 'बच्चासँगको नाता / Relationship:',
-              width: 200),
+              width: 200, fieldKey: 'informantRelationDetail', dataMap: _formData),
           const SizedBox(height: 12),
 
           // Contact
-          const Row(children: [
-            BirthLabeledField(
-                label: 'सम्पर्क नम्बर / Contact:', width: 130, isExpanded: true),
-            SizedBox(width: 16),
-            BirthLabeledField(label: 'ई-मेल / Email:', width: 180, isExpanded: true),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            BirthLabeledField(readOnly: widget.readOnly, 
+                label: 'सम्पर्क नम्बर / Contact:', width: 130, isExpanded: true, fieldKey: 'informantContact', dataMap: _formData),
+            const SizedBox(width: 16),
+            BirthLabeledField(readOnly: widget.readOnly, label: 'ई-मेल / Email:', width: 180, isExpanded: true, fieldKey: 'informantEmail', dataMap: _formData),
           ]),
           const SizedBox(height: 16),
 
@@ -655,9 +643,9 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                   color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const BirthLabeledField(
+          BirthLabeledField(readOnly: widget.readOnly, 
               label: 'नागरिकता प्र.प.नं./राष्ट्रिय परिचय नं.:',
-              width: 220),
+              width: 220, fieldKey: 'informantCitNo', dataMap: _formData),
           const SizedBox(height: 16),
 
           // Foreign citizen
@@ -667,23 +655,23 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                   color: AppColors.navy,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const Row(children: [
-            BirthLabeledField(label: 'राहदानी नं./Passport No.:', width: 160, isExpanded: true),
-            SizedBox(width: 16),
-            BirthLabeledField(
-                label: 'जारी गर्ने देश/Issuing Country:', width: 160, isExpanded: true),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            BirthLabeledField(readOnly: widget.readOnly, label: 'राहदानी नं./Passport No.:', width: 160, isExpanded: true, fieldKey: 'informantPassportNo', dataMap: _formData),
+            const SizedBox(width: 16),
+            BirthLabeledField(readOnly: widget.readOnly, 
+                label: 'जारी गर्ने देश/Issuing Country:', width: 160, isExpanded: true, fieldKey: 'informantPassportCountry', dataMap: _formData),
           ]),
           const SizedBox(height: 16),
 
           // Date filled
-          const Wrap(
+          Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 8,
             runSpacing: 12,
             children: [
-              Text('फाराम भरेको मिति (साल-महिना-गते):',
+              const Text('फाराम भरेको मिति (साल-महिना-गते):',
                   style: TextStyle(fontSize: 13, color: AppColors.navy, fontWeight: FontWeight.bold)),
-              BirthDateEntry(label: ''),
+              BirthDateEntry(readOnly: widget.readOnly, label: '', fieldKey: 'formFillDate', dataMap: _formData),
             ],
           ),
           const SizedBox(height: 24),
@@ -886,4 +874,4 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
       ],
     );
   }
-}
+}

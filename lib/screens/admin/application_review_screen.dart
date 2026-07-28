@@ -2,11 +2,70 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/status_badge_widget.dart';
-import 'admin_pdf_viewer_screen.dart';
+import 'admin_form_viewer_screen.dart';
 
 /// Screen for admin to review citizen applications.
-class ApplicationReviewScreen extends StatelessWidget {
+class ApplicationReviewScreen extends StatefulWidget {
   const ApplicationReviewScreen({super.key});
+
+  @override
+  State<ApplicationReviewScreen> createState() => _ApplicationReviewScreenState();
+}
+
+class _ApplicationReviewScreenState extends State<ApplicationReviewScreen> {
+  String _selectedFilter = 'All';
+  bool _isSelectMode = false;
+  Set<String> _selectedIds = {};
+
+  static const _filters = ['All', 'NID Registration', 'Citizenship', 'Birth Registration', 'Passport'];
+
+  Future<void> _deleteSelected() async {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete Forms'),
+        content: Text('Are you sure you want to delete ${_selectedIds.length} forms?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(context);
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => const Center(child: CircularProgressIndicator()),
+              );
+              try {
+                final batch = FirebaseFirestore.instance.batch();
+                for (String id in _selectedIds) {
+                  batch.delete(FirebaseFirestore.instance.collection('applications').doc(id));
+                }
+                await batch.commit();
+                setState(() {
+                  _isSelectMode = false;
+                  _selectedIds.clear();
+                });
+                if (mounted) Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Forms deleted successfully'), backgroundColor: Colors.green)
+                );
+              } catch (e) {
+                if (mounted) Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error deleting forms: $e'), backgroundColor: Colors.red)
+                );
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,17 +82,63 @@ class ApplicationReviewScreen extends StatelessWidget {
               children: [
                 const SizedBox(height: 20),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.navy),
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            if (_isSelectMode) {
+                              setState(() {
+                                _isSelectMode = false;
+                                _selectedIds.clear();
+                              });
+                            } else {
+                              Navigator.pop(context);
+                            }
+                          },
+                          icon: Icon(_isSelectMode ? Icons.close : Icons.arrow_back_ios_new_rounded, color: AppColors.navy),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(_isSelectMode ? '${_selectedIds.length} Selected' : 'Review Applications',
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.navy)),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    const Text('Review Applications',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.navy)),
+                    if (_isSelectMode && _selectedIds.isNotEmpty)
+                      IconButton(
+                        onPressed: _deleteSelected,
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                      ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 36,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: _filters.map((f) {
+                      final selected = _selectedFilter == f;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
+                          label: Text(f, style: TextStyle(
+                            fontSize: 12,
+                            color: selected ? Colors.white : AppColors.navy,
+                            fontWeight: FontWeight.w600,
+                          )),
+                          selected: selected,
+                          onSelected: (_) => setState(() => _selectedFilter = f),
+                          backgroundColor: Colors.white,
+                          selectedColor: AppColors.navy,
+                          checkmarkColor: Colors.white,
+                          side: BorderSide(color: AppColors.navy.withOpacity(0.3)),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
@@ -44,12 +149,17 @@ class ApplicationReviewScreen extends StatelessWidget {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
                       }
-
                       if (snapshot.hasError) {
                         return Center(child: Text('Error: ${snapshot.error}'));
                       }
 
-                      final applications = snapshot.data?.docs ?? [];
+                      final allDocs = snapshot.data?.docs ?? [];
+                      final applications = _selectedFilter == 'All'
+                          ? allDocs
+                          : allDocs.where((d) {
+                              final app = d.data() as Map<String, dynamic>;
+                              return (app['type'] ?? '') == _selectedFilter;
+                            }).toList();
 
                       if (applications.isEmpty) {
                         return Center(
@@ -67,38 +177,86 @@ class ApplicationReviewScreen extends StatelessWidget {
                         );
                       }
 
-                      return ListView.separated(
-                        itemCount: applications.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
+                      return Column(
+                        children: [
+                          if (_isSelectMode)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        if (_selectedIds.length == applications.length) {
+                                          _selectedIds.clear();
+                                          _isSelectMode = false;
+                                        } else {
+                                          _selectedIds.addAll(applications.map((d) => d.id));
+                                        }
+                                      });
+                                    },
+                                    icon: Icon(
+                                      _selectedIds.length == applications.length ? Icons.deselect : Icons.select_all,
+                                      color: AppColors.navy,
+                                    ),
+                                    label: Text(
+                                      _selectedIds.length == applications.length ? 'Deselect All' : 'Select All',
+                                      style: const TextStyle(color: AppColors.navy, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          Expanded(
+                            child: ListView.separated(
+                              itemCount: applications.length,
+                              separatorBuilder: (_, __) => const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
                           final doc = applications[index];
                           final app = doc.data() as Map<String, dynamic>;
-                          
+
                           return InkWell(
+                            onLongPress: () {
+                              if (!_isSelectMode) {
+                                setState(() {
+                                  _isSelectMode = true;
+                                  _selectedIds.add(doc.id);
+                                });
+                              }
+                            },
                             onTap: () {
-                              if (app['pdfBase64'] != null) {
+                              if (_isSelectMode) {
+                                setState(() {
+                                  if (_selectedIds.contains(doc.id)) {
+                                    _selectedIds.remove(doc.id);
+                                    if (_selectedIds.isEmpty) {
+                                      _isSelectMode = false;
+                                    }
+                                  } else {
+                                    _selectedIds.add(doc.id);
+                                  }
+                                });
+                              } else {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => AdminPdfViewerScreen(
+                                    builder: (_) => AdminFormViewerScreen(
                                       applicationId: doc.id,
-                                      pdfBase64: app['pdfBase64'],
                                       applicantName: app['applicant'] ?? 'Unknown',
+                                      applicationType: app['type'] ?? app['title'] ?? 'Unknown',
                                       status: app['status'] ?? 'Pending',
-                                      applicationType: app['type'] ?? app['title'],
                                     ),
                                   ),
                                 );
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('No PDF available for this application')),
-                                );
                               }
                             },
+                            borderRadius: BorderRadius.circular(16),
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: _selectedIds.contains(doc.id) ? Colors.red.withOpacity(0.05) : Colors.white,
+                                border: Border.all(color: _selectedIds.contains(doc.id) ? Colors.red : Colors.transparent),
                                 borderRadius: BorderRadius.circular(16),
                                 boxShadow: [
                                   BoxShadow(color: AppColors.navy.withOpacity(0.07),
@@ -107,11 +265,29 @@ class ApplicationReviewScreen extends StatelessWidget {
                               ),
                               child: Row(
                                 children: [
+                                  if (_isSelectMode) ...[
+                                    Icon(
+                                      _selectedIds.contains(doc.id) ? Icons.check_circle : Icons.radio_button_unchecked,
+                                      color: _selectedIds.contains(doc.id) ? Colors.red : Colors.grey,
+                                    ),
+                                    const SizedBox(width: 12),
+                                  ],
+                                  Container(
+                                    width: 42,
+                                    height: 42,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.navy.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(_typeIcon(app['type'] ?? ''),
+                                        color: AppColors.navy, size: 22),
+                                  ),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(app['title'] ?? '',
+                                        Text(app['title'] ?? app['type'] ?? '',
                                             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.navy)),
                                         const SizedBox(height: 4),
                                         Text(app['applicant'] ?? '',
@@ -127,7 +303,10 @@ class ApplicationReviewScreen extends StatelessWidget {
                             ),
                           );
                         },
-                      );
+                      ),
+                    ),
+                  ],
+                );
                     },
                   ),
                 ),
@@ -137,5 +316,15 @@ class ApplicationReviewScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  IconData _typeIcon(String type) {
+    switch (type) {
+      case 'NID Registration': return Icons.credit_card;
+      case 'Citizenship': return Icons.account_balance;
+      case 'Birth Registration': return Icons.child_care;
+      case 'Passport': return Icons.book_outlined;
+      default: return Icons.description_outlined;
+    }
   }
 }
