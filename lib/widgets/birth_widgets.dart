@@ -11,6 +11,7 @@ class BirthLabeledField extends StatelessWidget {
   final String? fieldKey;
   final Map<String, dynamic>? dataMap;
   final bool readOnly;
+  final bool isOptional;
 
   const BirthLabeledField({
     super.key,
@@ -21,6 +22,7 @@ class BirthLabeledField extends StatelessWidget {
     this.fieldKey,
     this.dataMap,
     this.readOnly = false,
+    this.isOptional = false,
   });
 
   @override
@@ -90,32 +92,26 @@ class BirthDateEntry extends StatelessWidget {
           Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy)),
           const SizedBox(height: 6),
         ],
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (int i = 0; i < 3; i++) ...[
-              SizedBox(
-                width: i == 0 ? 60.0 : 50.0,
-                child: TextFormField(
-                  readOnly: readOnly,
-                  initialValue: (dataMap != null && fieldKey != null) ? dataMap!['${fieldKey}_${parts[i]}'] : null,
-                  onChanged: (val) {
-                    if (dataMap != null && fieldKey != null) dataMap!['${fieldKey}_${parts[i]}'] = val;
-                  },
-                  textAlign: TextAlign.center,
-                  decoration: InputDecoration(
-                    filled: true, fillColor: Colors.white,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
-                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.teal, width: 1.5)),
-                    isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-                  ),
-                  style: const TextStyle(fontSize: 13),
-                ),
-              ),
-              if (i < 2) const Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text('-', style: TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold))),
-            ],
-          ],
+        SizedBox(
+          width: 140,
+          child: TextFormField(
+            readOnly: readOnly,
+            initialValue: (dataMap != null && fieldKey != null) ? dataMap![fieldKey!] : null,
+            onChanged: (val) {
+              if (dataMap != null && fieldKey != null) dataMap![fieldKey!] = val;
+            },
+            textAlign: TextAlign.center,
+            decoration: InputDecoration(
+              hintText: 'YYYY-MM-DD',
+              hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+              filled: true, fillColor: Colors.white,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.teal, width: 1.5)),
+              isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            ),
+            style: const TextStyle(fontSize: 13),
+          ),
         ),
       ],
     );
@@ -134,11 +130,11 @@ class NameRowBirth extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(children: [
-      BirthLabeledField(label: '??:', width: 120, isExpanded: true, fieldKey: prefixKey != null ? '_lastName' : null, dataMap: dataMap, readOnly: readOnly),
+      BirthLabeledField(label: 'थर:', width: 120, isExpanded: true, fieldKey: prefixKey != null ? '${prefixKey}_lastName' : null, dataMap: dataMap, readOnly: readOnly),
       const SizedBox(width: 12),
-      BirthLabeledField(label: '???:', width: 120, isExpanded: true, fieldKey: prefixKey != null ? '_firstName' : null, dataMap: dataMap, readOnly: readOnly),
+      BirthLabeledField(label: 'नाम:', width: 120, isExpanded: true, fieldKey: prefixKey != null ? '${prefixKey}_firstName' : null, dataMap: dataMap, readOnly: readOnly),
       const SizedBox(width: 12),
-      BirthLabeledField(label: '???????:', width: 100, isExpanded: true, fieldKey: prefixKey != null ? '_middleName' : null, dataMap: dataMap, readOnly: readOnly),
+      BirthLabeledField(label: 'बिचको नाम:', width: 100, isExpanded: true, fieldKey: prefixKey != null ? '${prefixKey}_middleName' : null, dataMap: dataMap, readOnly: readOnly),
     ]);
   }
 }

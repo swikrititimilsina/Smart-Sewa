@@ -19,6 +19,11 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow write: if isAuthenticated() && request.auth.uid == userId;
+      
+      // ── User Documents ──
+      match /documents/{documentId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
     }
 
     // ── Applications ──
@@ -43,7 +48,7 @@ service cloud.firestore {
     match /user_notifications/{notifId} {
       allow read:   if isAuthenticated() && isOwner(resource.data.citizenId);
       allow create: if isAdmin();
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || (isAuthenticated() && isOwner(resource.data.citizenId));
     }
   }
 }

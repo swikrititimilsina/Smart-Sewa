@@ -1,9 +1,11 @@
 // lib/screens/citizen/citizenship_redirect_screen.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../utils/app_colors.dart';
 import 'citizenship_apply_screen.dart';
-
 import '../../widgets/base64_upload_widget.dart';
+import '../../services/form_draft_service.dart';
 
 class CitizenshipRedirectScreen extends StatefulWidget {
   const CitizenshipRedirectScreen({super.key});
@@ -14,6 +16,15 @@ class CitizenshipRedirectScreen extends StatefulWidget {
 
 class _CitizenshipRedirectScreenState extends State<CitizenshipRedirectScreen> {
   String? _attachedDocumentBase64;
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = FormDraftService.getDraft('redirect_citizenship');
+    if (draft != null) {
+      _attachedDocumentBase64 = draft['doc'];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,10 +112,38 @@ class _CitizenshipRedirectScreenState extends State<CitizenshipRedirectScreen> {
               icon: Icons.badge_outlined,
               title: 'नागरिकताको प्रमाणपत्र',
               subtitle: 'Citizenship Certificate',
-              onImageChanged: (base64Str) {
+              initialBase64: _attachedDocumentBase64,
+              onImageChanged: (base64Str) async {
                 setState(() {
                   _attachedDocumentBase64 = base64Str;
                 });
+                if (base64Str != null) {
+                  FormDraftService.saveDraft('redirect_citizenship', {'doc': base64Str});
+                  
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user != null) {
+                    try {
+                      await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(user.uid)
+                          .collection('documents')
+                          .add({
+                        'title': 'Citizenship Existing Document',
+                        'base64': base64Str,
+                        'uploadedAt': FieldValue.serverTimestamp(),
+                      });
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Document saved to My Documents'), backgroundColor: Colors.green),
+                        );
+                      }
+                    } catch (e) {
+                      debugPrint('Error saving doc: $e');
+                    }
+                  }
+                } else {
+                  FormDraftService.clearDraft('redirect_citizenship');
+                }
               },
             ),
 

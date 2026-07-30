@@ -45,6 +45,7 @@ class PassportField extends StatelessWidget {
   final String? fieldKey;
   final Map<String, dynamic>? dataMap;
   final bool readOnly;
+  final String? hintText;
 
   const PassportField({
     super.key,
@@ -57,6 +58,7 @@ class PassportField extends StatelessWidget {
     this.fieldKey,
     this.dataMap,
     this.readOnly = false,
+    this.hintText,
   });
 
   @override
@@ -73,7 +75,7 @@ class PassportField extends StatelessWidget {
           const SizedBox(height: 6),
           TextFormField(
             readOnly: readOnly,
-            initialValue: (dataMap != null && fieldKey != null) ? dataMap![fieldKey] : defaultValue,
+            initialValue: (dataMap != null && fieldKey != null) ? (dataMap![fieldKey] ?? defaultValue) : defaultValue,
             onChanged: (val) {
               if (dataMap != null && fieldKey != null) {
                 dataMap![fieldKey!] = val;
@@ -101,6 +103,8 @@ class PassportField extends StatelessWidget {
               counterText: '',
               filled: true,
               fillColor: Colors.white,
+              hintText: hintText,
+              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 12),
             ),
             style: const TextStyle(fontSize: 13, color: AppColors.navy),
           ),
@@ -286,6 +290,166 @@ class PassportDivider extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Divider(color: Colors.grey.shade300, height: 1),
+    );
+  }
+}
+
+// ── Generic labeled dropdown field ─────────────────────────────────────────────
+class PassportDropdownField extends StatelessWidget {
+  final String label;
+  final double width;
+  final List<String> items;
+  final String? value;
+  final ValueChanged<String?>? onChanged;
+  final String? fieldKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
+
+  const PassportDropdownField({
+    super.key,
+    required this.label,
+    required this.width,
+    required this.items,
+    this.value,
+    this.onChanged,
+    this.fieldKey,
+    this.dataMap,
+    this.readOnly = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy),
+          ),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String>(
+            value: (dataMap != null && fieldKey != null && items.contains(dataMap![fieldKey])) 
+                ? dataMap![fieldKey] 
+                : items.contains(value) ? value : null,
+            items: items.map((item) {
+              return DropdownMenuItem(
+                value: item,
+                child: Text(item, style: const TextStyle(fontSize: 13, color: AppColors.navy)),
+              );
+            }).toList(),
+            onChanged: readOnly ? null : (val) {
+              if (dataMap != null && fieldKey != null) {
+                dataMap![fieldKey!] = val;
+              }
+              if (onChanged != null) {
+                onChanged!(val);
+              }
+            },
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.teal, width: 1.5),
+              ),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+            dropdownColor: Colors.white,
+            isExpanded: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Generic labeled date picker field ──────────────────────────────────────────
+class PassportDateField extends StatefulWidget {
+  final String label;
+  final double width;
+  final String? fieldKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
+
+  const PassportDateField({
+    super.key,
+    required this.label,
+    required this.width,
+    this.fieldKey,
+    this.dataMap,
+    this.readOnly = false,
+  });
+
+  @override
+  State<PassportDateField> createState() => _PassportDateFieldState();
+}
+
+class _PassportDateFieldState extends State<PassportDateField> {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: widget.width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy),
+          ),
+          const SizedBox(height: 6),
+          TextFormField(
+            readOnly: true,
+            initialValue: (widget.dataMap != null && widget.fieldKey != null) ? widget.dataMap![widget.fieldKey] : null,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.teal, width: 1.5),
+              ),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              filled: true,
+              fillColor: Colors.white,
+              suffixIcon: const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+            ),
+            style: const TextStyle(fontSize: 13, color: AppColors.navy),
+            onTap: widget.readOnly
+                ? null
+                : () async {
+                    final DateTime? picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime.now().add(const Duration(days: 3650)),
+                    );
+                    if (picked != null && widget.dataMap != null && widget.fieldKey != null) {
+                      final formatted = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                      widget.dataMap![widget.fieldKey!] = formatted;
+                      setState(() {});
+                    }
+                  },
+          ),
+        ],
+      ),
     );
   }
 }

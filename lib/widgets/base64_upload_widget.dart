@@ -9,6 +9,8 @@ class Base64UploadWidget extends StatefulWidget {
   final String title;
   final String subtitle;
   final Function(String? base64String) onImageChanged;
+  final bool readOnly;
+  final String? initialBase64;
 
   const Base64UploadWidget({
     super.key,
@@ -16,6 +18,8 @@ class Base64UploadWidget extends StatefulWidget {
     required this.title,
     required this.subtitle,
     required this.onImageChanged,
+    this.readOnly = false,
+    this.initialBase64,
   });
 
   @override
@@ -26,6 +30,11 @@ class _Base64UploadWidgetState extends State<Base64UploadWidget> {
   String? _base64Image;
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _base64Image = widget.initialBase64;
+  }
   Future<void> _pickImage() async {
     setState(() => _isLoading = true);
     try {
@@ -159,13 +168,13 @@ class _Base64UploadWidgetState extends State<Base64UploadWidget> {
                   width: 24, height: 24,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              else if (_base64Image != null)
+              else if (_base64Image != null && !widget.readOnly)
                 IconButton(
                   onPressed: _removeImage,
                   icon: const Icon(Icons.delete, color: Colors.red),
                   tooltip: 'Remove document',
                 )
-              else
+              else if (_base64Image == null && !widget.readOnly)
                 InkWell(
                   onTap: _pickImage,
                   borderRadius: BorderRadius.circular(20),

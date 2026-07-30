@@ -96,8 +96,19 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           UserSession.loggedInName = userCredential.user?.displayName ?? email.split('@')[0];
           UserSession.loggedInPhone = email;
           
+          bool isAdminEmail = email.toLowerCase() == 'admin@smartsewa.com';
+          
+          if (isAdminEmail) {
+            // Create the admin doc so Firestore Rules' isAdmin() works
+            await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+              'name': 'Admin',
+              'email': email,
+              'role': 'admin',
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+          }
+          
           if (mounted) {
-            bool isAdminEmail = email.toLowerCase() == 'admin@smartsewa.com';
             if (isAdminEmail) {
               Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminHomeScreen()));
             } else {

@@ -6,8 +6,9 @@ import 'package:smartsewa/utils/app_colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:smartsewa/widgets/attached_document_viewer.dart';
+import 'package:smartsewa/widgets/base64_upload_widget.dart';
 import 'citizenship_apply_screen.dart';
-
+import 'package:smartsewa/services/form_draft_service.dart';
 class CitizenshipFormScreen extends StatefulWidget {
   final bool readOnly;
   final Map<String, dynamic>? initialData;
@@ -41,7 +42,21 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
     if (widget.initialData != null) {
       _formData.addAll(widget.initialData!);
       _sex = _formData['sex'];
+    } else if (!widget.readOnly) {
+      final draft = FormDraftService.getDraft('citizenship_${widget.formType.name}');
+      if (draft != null) {
+        _formData.addAll(draft);
+        _sex = _formData['sex'];
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    if (!widget.readOnly && widget.initialData == null) {
+      FormDraftService.saveDraft('citizenship_${widget.formType.name}', _formData);
+    }
+    super.dispose();
   }
 
   Future<void> _submit() async {
@@ -57,6 +72,49 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
       if (user == null) {
         throw Exception('You must be logged in to submit a form.');
       }
+
+      // Validate mandatory uploads for migration form
+      if (widget.formType == CitizenshipFormType.migration) {
+        if (_formData['doc_migration_cert'] == null) {
+          throw Exception('कृपया बसाईसराई प्रमाणपत्र अपलोड गर्नुहोस् (Upload migration certificate)');
+        }
+        if (_formData['doc_old_citizenship'] == null) {
+          throw Exception('कृपया पुरानो नागरिकताको प्रमाण अपलोड गर्नुहोस् (Upload old citizenship)');
+        }
+        if (_formData['doc_new_address_recommendation'] == null) {
+          throw Exception('कृपया नयाँ ठेगानाको सिफारिस अपलोड गर्नुहोस् (Upload new address recommendation)');
+        }
+      }
+
+      // Validate mandatory uploads for surname change form
+      if (widget.formType == CitizenshipFormType.surnameChange) {
+        if (_formData['doc_marriage_cert'] == null) {
+          throw Exception('कृपया विवाह दर्ता प्रमाणपत्र अपलोड गर्नुहोस् (Upload marriage certificate)');
+        }
+        if (_formData['doc_old_citizenship'] == null) {
+          throw Exception('कृपया पुरानो नागरिकताको प्रमाण अपलोड गर्नुहोस् (Upload old citizenship)');
+        }
+        if (_formData['doc_spouse_citizenship'] == null) {
+          throw Exception('कृपया पतिको नागरिकता अपलोड गर्नुहोस् (Upload spouse citizenship)');
+        }
+      }
+
+      // Validate mandatory uploads for citizenship form
+      if (widget.formType == CitizenshipFormType.citizenship) {
+        if (_formData['doc_photo'] == null) {
+          throw Exception('कृपया पासपोर्ट साइजको फोटो अपलोड गर्नुहोस् (Upload passport size photo)');
+        }
+        if (_formData['doc_sifarish'] == null) {
+          throw Exception('कृपया सिफारिस अपलोड गर्नुहोस् (Upload sifarish document)');
+        }
+        if (_formData['doc_birth_cert'] == null) {
+          throw Exception('कृपया जन्मदर्ता प्रमाण अपलोड गर्नुहोस् (Upload birth certificate)');
+        }
+        if (_formData['doc_parent_citizenship'] == null) {
+          throw Exception('कृपया बाबुआमाको नागरिकता अपलोड गर्नुहोस् (Upload parent citizenship)');
+        }
+      }
+
 
       final appData = {
         'applicant': '${_formData['firstName_eng'] ?? ''} ${_formData['lastName_eng'] ?? ''}'.trim().isNotEmpty ? '${_formData['firstName_eng'] ?? ''} ${_formData['lastName_eng'] ?? ''}' : 'Applicant',
@@ -74,6 +132,40 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
       };
 
       await FirebaseFirestore.instance.collection('applications').add(appData);
+
+      // Save all uploaded documents to user's global documents collection
+      final docTypes = {
+        'doc_photo': 'Citizenship: Passport Photo',
+        'doc_sifarish': 'Citizenship: Sifarish',
+        'doc_birth_cert': 'Citizenship: Birth Certificate',
+        'doc_parent_citizenship': 'Citizenship: Parent Citizenship',
+        'doc_migration_cert': 'Citizenship: Migration Certificate',
+        'doc_old_citizenship': 'Citizenship: Old Citizenship',
+        'doc_new_address_recommendation': 'Citizenship: New Address Rec.',
+        'doc_marriage_cert': 'Citizenship: Marriage Certificate',
+        'doc_spouse_citizenship': 'Citizenship: Spouse Citizenship',
+        'doc_school_cert': 'Citizenship: School Certificate',
+        'doc_other': 'Citizenship: Other Document',
+      };
+      
+      final batch = FirebaseFirestore.instance.batch();
+      final userDocsRef = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('documents');
+      
+      for (final entry in docTypes.entries) {
+        if (_formData[entry.key] != null) {
+          final docRef = userDocsRef.doc(entry.key);
+          batch.set(docRef, {
+            'title': entry.value,
+            'base64': _formData[entry.key],
+            'uploadedAt': FieldValue.serverTimestamp(),
+            'type': entry.key,
+          });
+        }
+      }
+      
+      await batch.commit();
+
+      FormDraftService.clearDraft('citizenship_${widget.formType.name}');
 
       if (mounted) Navigator.pop(context);
 
@@ -122,10 +214,64 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
   }
 
   void _printPreview() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('🖨 Print feature coming soon'),
-        backgroundColor: AppColors.teal,
+    _formKey.currentState?.save();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.92,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, scrollCtrl) => Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFFF0F4FA),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 6),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: Row(
+                  children: [
+                    const Icon(Icons.preview, color: AppColors.navy, size: 20),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text('Preview / पूर्वावलोकन',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.navy)),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollCtrl,
+                  padding: const EdgeInsets.all(16),
+                  child: CitizenshipFormScreen(
+                    readOnly: true,
+                    initialData: Map<String, dynamic>.from(_formData),
+                    asSubView: true,
+                    formType: widget.formType,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -215,23 +361,40 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
 
   // ── TITLE ──────────────────────────────────────────────────────────────────
   Widget _buildTitle() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final ro = widget.readOnly;
+    return Column(
       children: [
-        Expanded(
-          child: Center(
-            child: Text(
-              'अनुसूची-१',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.navy),
-            ),
-          ),
+        const Text(
+          'अनुसूची-१',
+          style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.navy),
         ),
-        const CitPhotoUpload(
-          label:
-          'निवेदकको\nदुवै कान देखिने\nपासपोर्ट साइजको\nफोटो\n(Click to upload)',
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text('निवेदकको दुवै कान देखिने पासपोर्ट साइजको फोटो',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(fontSize: 11, color: AppColors.navy, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  Base64UploadWidget(
+                    title: 'फोटो',
+                    subtitle: 'अनिवार्य / compulsory',
+                    icon: Icons.camera_alt_outlined,
+                    readOnly: ro,
+                    initialBase64: _formData['doc_photo'],
+                    onImageChanged: ro ? (_) {} : (val) => setState(() => _formData['doc_photo'] = val),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -254,11 +417,45 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
           children: [
             CitField(readOnly: widget.readOnly, hint: 'ठाउँ', width: 160),
             Text(',', style: TextStyle(fontSize: 14)),
-            CitField(readOnly: widget.readOnly, hint: 'जिल्ला', width: 160),
+            _buildDistrictDropdown(),
             Text('जिल्ला', style: TextStyle(fontSize: 13)),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildDistrictDropdown() {
+    final districts = [
+      'Achham','Arghakhanchi','Baglung','Baitadi','Bajhang','Bajura','Banke','Bara','Bardiya',
+      'Bhaktapur','Bhojpur','Chitwan','Dadeldhura','Dailekh','Dang','Darchula','Dhading',
+      'Dhankuta','Dhanusha','Dolakha','Dolpa','Doti','Eastern Rukum','Gorkha','Gulmi','Humla',
+      'Ilam','Jajarkot','Jhapa','Jumla','Kailali','Kalikot','Kanchanpur','Kapilvastu','Kaski',
+      'Kathmandu','Kavrepalanchok','Khotang','Lalitpur','Lamjung','Mahottari','Makwanpur',
+      'Manang','Morang','Mugu','Mustang','Myagdi','Nawalpur','Nuwakot','Okhaldhunga','Palpa',
+      'Panchthar','Parbat','Parsa','Pyuthan','Ramechhap','Rasuwa','Rautahat','Rolpa',
+      'Rupandehi','Salyan','Sankhuwasabha','Saptari','Sarlahi','Sindhuli','Sindhupalchok',
+      'Siraha','Solukhumbu','Sunsari','Surkhet','Syangja','Tanahun','Taplejung','Terhathum',
+      'Udayapur','Western Rukum'
+    ];
+    return SizedBox(
+      width: 180,
+      child: DropdownButtonFormField<String>(
+        value: _formData['addressDistrict'],
+        isExpanded: true,
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+          filled: true,
+          fillColor: Colors.white,
+          hintText: 'जिल्ला चयन गर्नुहोस्',
+          hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        style: const TextStyle(fontSize: 13, color: Colors.black87),
+        items: districts.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+        onChanged: widget.readOnly ? null : (v) => setState(() => _formData['addressDistrict'] = v),
+      ),
     );
   }
 
@@ -289,6 +486,34 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
           CitField(readOnly: ro, label: 'Spouse Citizenship No. / पतिको नागरिकता नं.', width: double.infinity, fieldKey: 'spouseCitNo', dataMap: _formData),
           const SizedBox(height: 12),
           Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [const Text('Marriage Date: ', style: TextStyle(fontSize: 13)), const SizedBox(width: 8), CitDateEntry(readOnly: ro, fieldKey: 'marriageDate', dataMap: _formData)]),
+          const SizedBox(height: 24),
+          const Text('संलग्न कागजातहरू / Required Documents',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.navy)),
+          const SizedBox(height: 8),
+          Base64UploadWidget(
+            title: 'विवाह दर्ता प्रमाणपत्र',
+            subtitle: 'अनिवार्य / compulsory',
+            icon: Icons.description_outlined,
+            readOnly: ro,
+            initialBase64: _formData['doc_marriage_cert'],
+            onImageChanged: ro ? (_) {} : (val) => setState(() => _formData['doc_marriage_cert'] = val),
+          ),
+          Base64UploadWidget(
+            title: 'पुरानो नागरिकताको प्रमाण',
+            subtitle: 'अनिवार्य / compulsory',
+            icon: Icons.badge_outlined,
+            readOnly: ro,
+            initialBase64: _formData['doc_old_citizenship'],
+            onImageChanged: ro ? (_) {} : (val) => setState(() => _formData['doc_old_citizenship'] = val),
+          ),
+          Base64UploadWidget(
+            title: 'पतिको नागरिकता',
+            subtitle: 'अनिवार्य / compulsory',
+            icon: Icons.people_outline,
+            readOnly: ro,
+            initialBase64: _formData['doc_spouse_citizenship'],
+            onImageChanged: ro ? (_) {} : (val) => setState(() => _formData['doc_spouse_citizenship'] = val),
+          ),
         ],
       ),
     );
@@ -317,6 +542,34 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
           CitField(readOnly: ro, label: 'Migration Cert No. / बसाइसराई दर्ता नं.', width: double.infinity, fieldKey: 'migCertNo', dataMap: _formData),
           const SizedBox(height: 12),
           Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [const Text('Migration Date: ', style: TextStyle(fontSize: 13)), const SizedBox(width: 8), CitDateEntry(readOnly: ro, fieldKey: 'migDate', dataMap: _formData)]),
+          const SizedBox(height: 24),
+          const Text('संलग्न कागजातहरू / Required Documents',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.navy)),
+          const SizedBox(height: 8),
+          Base64UploadWidget(
+            title: 'बसाईसराई प्रमाणपत्र',
+            subtitle: 'अनिवार्य / compulsory',
+            icon: Icons.swap_horiz,
+            readOnly: ro,
+            initialBase64: _formData['doc_migration_cert'],
+            onImageChanged: ro ? (_) {} : (val) => setState(() => _formData['doc_migration_cert'] = val),
+          ),
+          Base64UploadWidget(
+            title: 'पुरानो नागरिकताको प्रमाण',
+            subtitle: 'अनिवार्य / compulsory',
+            icon: Icons.badge_outlined,
+            readOnly: ro,
+            initialBase64: _formData['doc_old_citizenship'],
+            onImageChanged: ro ? (_) {} : (val) => setState(() => _formData['doc_old_citizenship'] = val),
+          ),
+          Base64UploadWidget(
+            title: 'नयाँ ठेगानाको सिफारिस',
+            subtitle: 'अनिवार्य / compulsory',
+            icon: Icons.location_on_outlined,
+            readOnly: ro,
+            initialBase64: _formData['doc_new_address_recommendation'],
+            onImageChanged: ro ? (_) {} : (val) => setState(() => _formData['doc_new_address_recommendation'] = val),
+          ),
         ],
       ),
     );
@@ -340,7 +593,7 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'महोदय,\n\n    म बंशजको नाताले जन्मका आधारले नेपाली नागरिकता भएकोले देहायको विवरण खोली नेपाली नागरिकताको प्रमाण-पत्र पाउनको लागि सिफारिस साथ रु.१०१-को टिकट टाँसी यो निवेदन पत्र पेश गरेको छु । मैले यस अघि नेपाली नागरिकताको प्रमाण-पत्र लिएको छैन ।',
+          'महोदय,\n\n    म बंशजको नाताले जन्मका आधारले नेपाली नागरिकता भएकोले देहायको विवरण खोली नेपाली नागरिकताको प्रमाण-पत्र पाउनको लागि सिफारिस साथ यो निवेदन पत्र पेश गरेको छु । मैले यस अघि नेपाली नागरिकताको प्रमाण-पत्र लिएको छैन ।',
           style: TextStyle(fontSize: 13, height: 1.5),
         ),
         SizedBox(height: 12),
@@ -464,10 +717,16 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
         CitLabeledRow(label: '७. आमाको नाम, घर:', field: CitField(readOnly: ro, fieldKey: 'motherName', dataMap: d)),
         CitLabeledRow(label: '    ठेगाना:', field: CitField(readOnly: ro, fieldKey: 'motherAddress', dataMap: d)),
         CitLabeledRow(label: '    नागरिकता नं.:', field: CitField(readOnly: ro, fieldKey: 'motherCitNo', dataMap: d)),
-        CitLabeledRow(label: '८. पति/पत्नीको नाम, घर:', field: CitField(readOnly: ro, fieldKey: 'spouseName', dataMap: d)),
-        CitLabeledRow(label: '    ठेगाना:', field: CitField(readOnly: ro, fieldKey: 'spouseAddress', dataMap: d)),
-        CitLabeledRow(label: '    नागरिकता नं.:', field: CitField(readOnly: ro, fieldKey: 'spouseCitNo', dataMap: d)),
-        CitLabeledRow(label: '९. संरक्षकको नाम, घर:', field: CitField(readOnly: ro, fieldKey: 'guardianName', dataMap: d)),
+        const SizedBox(height: 4),
+        const Text('८. पति/पत्नीको नाम, घर: (Optional)',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.navy)),
+        CitField(readOnly: ro, fieldKey: 'spouseName', dataMap: d, hint: 'नाम, घर'),
+        CitField(readOnly: ro, fieldKey: 'spouseAddress', dataMap: d, hint: 'ठेगाना'),
+        CitField(readOnly: ro, fieldKey: 'spouseCitNo', dataMap: d, hint: 'नागरिकता नं.'),
+        const SizedBox(height: 4),
+        const Text('९. संरक्षकको नाम, घर: (Optional)',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.navy)),
+        CitField(readOnly: ro, fieldKey: 'guardianName', dataMap: d, hint: 'नाम, घर'),
       ],
     );
   }
@@ -540,6 +799,7 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
   }
 
   Widget _buildDigitalSignature() {
+    final today = '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -548,257 +808,79 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
         SizedBox(height: 8),
         CitSignaturePad(width: double.infinity, height: 80),
         SizedBox(height: 12),
-        Text('मिति / Date: ____________________',
-            style: TextStyle(fontSize: 13, color: AppColors.navy)),
+        Text('मिति / Date: $today',
+            style: TextStyle(fontSize: 13, color: AppColors.navy, fontWeight: FontWeight.w600)),
       ],
     );
   }
 
   // ── SECTION C: VDC Recommendation ─────────────────────────────────────────
   Widget _buildSectionC() {
+    final ro = widget.readOnly;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CitSectionHeader(
-            '  गाउँ विकास समिति / उप/मह/नगरपालिकाको सिफारिस'),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFF9FAFB),
-            border: Border.all(color: Colors.grey.shade300, width: 1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  Text(
-                      '...... गाउँ विकास समिति / नगरपालिका / उपमहानगरपालिका / महानगरपालिकाको वडा नं.',
-                      style: TextStyle(fontSize: 13, height: 1.5)),
-                  CitField(readOnly: widget.readOnly, width: 80, hint: 'वडा'),
-                  Text('बस्ने', style: TextStyle(fontSize: 13)),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  Text('मा मिति', style: TextStyle(fontSize: 13)),
-                  CitDateEntry(readOnly: widget.readOnly, ),
-                  Text('मा जन्म भई हाल',
-                      style: TextStyle(fontSize: 13)),
-                  CitField(readOnly: widget.readOnly, width: 200, hint: 'हालको ठेगाना'),
-                  Text(
-                      'गाउँ विकास समिति / नगरपालिका / उपमहानगरपालिका / महानगरपालिका वडा नं.',
-                      style: TextStyle(fontSize: 13)),
-                  CitField(readOnly: widget.readOnly, width: 80, hint: 'वडा'),
-                  Text('मा स्थायी रूपमा बसोबास गरी आएका',
-                      style: TextStyle(fontSize: 13)),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  Text('लेखिएका श्रीमान्/श्रीमती',
-                      style: TextStyle(fontSize: 13)),
-                  CitField(readOnly: widget.readOnly, width: 200, hint: 'पति/पत्नीको नाम'),
-                  Text('को छोरा / छोरी / पत्नी वर्ष',
-                      style: TextStyle(fontSize: 13)),
-                  CitField(readOnly: widget.readOnly, 
-                    width: 80,
-                    hint: 'उमेर',
-                    keyboardType: TextInputType.number,
-                  ),
-                  Text('को', style: TextStyle(fontSize: 13)),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  Text('श्री / सुश्री / श्रीमती',
-                      style: TextStyle(fontSize: 13)),
-                  CitField(readOnly: widget.readOnly, width: 240, hint: 'निवेदकको नाम'),
-                  Text('लाई म राम्ररी चिन्दछु ।',
-                      style: TextStyle(fontSize: 13)),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'उपर्युक्त लेखिए बमोजिमको निजको व्यहोरा मैले जाने बुझे सम्म साँचो हो । निजलाई बंशज / जन्मका आधारले नागरिकताको प्रमाण-पत्र दिएमा हुन्छ । उक्त विवरण झुट्ठा ठहरे कानून बमोजिम सहुँला बुझाउँला ।',
-                style: TextStyle(fontSize: 13, height: 1.5),
-              ),
-              const CitDivider(),
-
-              Wrap(
-                spacing: 16,
-                runSpacing: 12,
-                children: [
-                  CitField(readOnly: widget.readOnly, label: 'मिति :-', width: 200, fieldKey: 'vdcDate', dataMap: _formData),
-                  CitField(readOnly: widget.readOnly, label: 'कार्यालयको नाम र छाप :', width: 260, fieldKey: 'vdcOffice', dataMap: _formData),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              LayoutBuilder(builder: (ctx, constraints) {
-                return constraints.maxWidth > 500
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('सिफारिस गर्नेको :',
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.navy)),
-                          const SizedBox(width: 32),
-                          Expanded(child: _buildVdcSignBlock()),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('सिफारिस गर्नेको :',
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.navy)),
-                          const SizedBox(height: 12),
-                          _buildVdcSignBlock(),
-                        ],
-                      );
-              }),
-              const SizedBox(height: 20),
-
-              const Text(
-                  'संलग्न कागजातहरू / Attached Documents (optional):',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.navy)),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 16,
-                runSpacing: 12,
-                children: [
-                  _DocSlot(label: 'सिफारिस पत्र\n(Recommendation)'),
-                  _DocSlot(
-                      label: 'नागरिकता प्रमाण\n(Citizenship Proof)'),
-                  _DocSlot(
-                      label: 'अन्य कागजात\n(Other Document)'),
-                ],
-              ),
-            ],
-          ),
+        CitSectionHeader('  गाउँ विकास समिति / उप/मह/नगरपालिकाको सिफारिस'),
+        const SizedBox(height: 12),
+        Base64UploadWidget(
+          title: 'सिफारिस',
+          subtitle: 'अनिवार्य / compulsory',
+          icon: Icons.recommend_outlined,
+          readOnly: ro,
+          initialBase64: _formData['doc_sifarish'],
+          onImageChanged: ro ? (_) {} : (val) => setState(() => _formData['doc_sifarish'] = val),
         ),
       ],
     );
   }
-
-  Widget _buildVdcSignBlock() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('दस्तखत / Digital Signature:',
-            style: TextStyle(fontSize: 12, color: AppColors.navy)),
-        const SizedBox(height: 8),
-        const CitSignaturePad(width: double.infinity, height: 60),
-        const SizedBox(height: 12),
-        CitLabeledRow(label: 'नाम, घर :', field: CitField(readOnly: widget.readOnly, fieldKey: 'vdcSignName', dataMap: _formData)),
-        const SizedBox(height: 8),
-        CitLabeledRow(label: 'पद :', field: CitField(readOnly: widget.readOnly, fieldKey: 'vdcSignPost', dataMap: _formData)),
-      ],
-    );
-  }
-
   // ── SECTION D: निर्णय / Decision ──────────────────────────────────────────
   Widget _buildSectionD() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CitSectionHeader('  निर्णय / Decision'),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 20,
-          runSpacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            CitField(readOnly: widget.readOnly, label: 'वितरित ना:प्र.प.नं.:', width: 220, fieldKey: 'citizenshipNo', dataMap: _formData),
-            CitField(readOnly: widget.readOnly, label: 'मिति :', width: 200, fieldKey: 'issuedDate', dataMap: _formData),
-          ],
-        ),
-        const SizedBox(height: 16),
-        LayoutBuilder(builder: (ctx, constraints) {
-          final w = ((constraints.maxWidth - 40) / 3).clamp(120.0, 240.0);
-          return Wrap(
-            spacing: 20,
-            runSpacing: 20,
-            children: [
-              for (final role in [
-                'सनाखत गराउने',
-                'पेश गर्ने',
-                'सदर गर्ने'
-              ])
-                SizedBox(
-                  width: w,
-                  child: Column(
-                    children: [
-                      Text(role,
-                          style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.navy)),
-                      const SizedBox(height: 8),
-                      const CitSignaturePad(
-                          width: double.infinity, height: 70),
-                    ],
-                  ),
-                ),
-            ],
-          );
-        }),
-      ],
-    );
+    // निर्णय section removed as requested
+    return const SizedBox.shrink();
   }
 
   // ── SECTION E: Optional Documents ─────────────────────────────────────────
   Widget _buildSectionE() {
+    final ro = widget.readOnly;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CitSectionHeader(
-            '  संलग्न कागजातहरू / Supporting Documents (Optional)'),
-        const SizedBox(height: 8),
-        const Text(
-          'तलका कागजातहरू अनिवार्य छैनन् — उपलब्ध भएमा मात्र संलग्न गर्नुहोस् ।\n(The following documents are optional — attach only if available.)',
-          style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.4),
+        CitSectionHeader('  संलग्न कागजातहरू / Supporting Documents'),
+        const SizedBox(height: 12),
+        Base64UploadWidget(
+          title: 'जन्मदर्ता प्रमाण',
+          subtitle: 'अनिवार्य / compulsory',
+          icon: Icons.child_care_outlined,
+          readOnly: ro,
+          initialBase64: _formData['doc_birth_cert'],
+          onImageChanged: ro ? (_) {} : (val) => setState(() => _formData['doc_birth_cert'] = val),
         ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            _DocSlot(
-                label: 'जन्मदर्ता प्रमाण\n(Birth Certificate)'),
-            _DocSlot(
-                label:
-                    'बाबु/आमाको\nनागरिकता\n(Parent Citizenship)'),
-            _DocSlot(
-                label: 'विद्यालय प्रमाण\n(School Certificate)'),
-            _DocSlot(
-                label: 'अन्य कागजात\n(Other Document)'),
-          ],
+        const SizedBox(height: 8),
+        Base64UploadWidget(
+          title: 'बाबुआमाको नागरिकता',
+          subtitle: 'अनिवार्य / compulsory',
+          icon: Icons.people_outline,
+          readOnly: ro,
+          initialBase64: _formData['doc_parent_citizenship'],
+          onImageChanged: ro ? (_) {} : (val) => setState(() => _formData['doc_parent_citizenship'] = val),
+        ),
+        const SizedBox(height: 8),
+        Base64UploadWidget(
+          title: 'विद्यालय प्रमाण',
+          subtitle: 'ऐच्छिक / optional',
+          icon: Icons.school_outlined,
+          readOnly: ro,
+          initialBase64: _formData['doc_school_cert'],
+          onImageChanged: ro ? (_) {} : (val) => setState(() => _formData['doc_school_cert'] = val),
+        ),
+        const SizedBox(height: 8),
+        Base64UploadWidget(
+          title: 'अन्य कागजातहरू',
+          subtitle: 'ऐच्छिक / optional',
+          icon: Icons.attach_file_outlined,
+          readOnly: ro,
+          initialBase64: _formData['doc_other'],
+          onImageChanged: ro ? (_) {} : (val) => setState(() => _formData['doc_other'] = val),
         ),
       ],
     );

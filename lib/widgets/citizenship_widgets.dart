@@ -271,28 +271,77 @@ class _CitPhotoUploadState extends State<CitPhotoUpload> {
   }
 }
 
-// ── Signature pad placeholder ──────────────────────────────────────────────
-class CitSignaturePad extends StatelessWidget {
+// ── Signature pad ─────────────────────────────────────────────────────────
+class CitSignaturePad extends StatefulWidget {
   final double width;
   final double height;
   const CitSignaturePad({super.key, this.width = double.infinity, this.height = 80});
 
   @override
+  State<CitSignaturePad> createState() => _CitSignaturePadState();
+}
+
+class _CitSignaturePadState extends State<CitSignaturePad> {
+  final List<Offset?> _points = [];
+  bool get _hasSig => _points.any((p) => p != null);
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Text(
-          'Tap to sign',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Listener(
+            onPointerDown: (e) => setState(() => _points.add(e.localPosition)),
+            onPointerMove: (e) => setState(() => _points.add(e.localPosition)),
+            onPointerUp: (_) => setState(() => _points.add(null)),
+            child: CustomPaint(
+              painter: _CitSigPainter(_points),
+              child: _hasSig
+                  ? const SizedBox.expand()
+                  : Center(
+                      child: Text(
+                        'यहाँ दस्तखत गर्नुहोस्',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                      ),
+                    ),
+            ),
+          ),
         ),
-      ),
+        if (_hasSig)
+          TextButton.icon(
+            onPressed: () => setState(() => _points.clear()),
+            icon: const Icon(Icons.clear, size: 14, color: Colors.red),
+            label: const Text('मेटाउनुहोस्',
+                style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+      ],
     );
   }
-}
+}
+
+class _CitSigPainter extends CustomPainter {
+  final List<Offset?> points;
+  _CitSigPainter(this.points);
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round;
+    for (int i = 0; i < points.length - 1; i++) {
+      if (points[i] != null && points[i + 1] != null) {
+        canvas.drawLine(points[i]!, points[i + 1]!, paint);
+      }
+    }
+  }
+  @override
+  bool shouldRepaint(_CitSigPainter old) => old.points != points;
+}

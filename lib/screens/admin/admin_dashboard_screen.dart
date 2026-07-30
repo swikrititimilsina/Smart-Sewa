@@ -202,10 +202,6 @@ class AdminHomeScreen extends StatelessWidget {
                           );
                         },
                       ),
-                      const ServiceTile(
-                        icon: Icons.people_outline,
-                        label: 'Manage\nCitizens',
-                      ),
                       ServiceTile(
                         icon: Icons.notifications_active_outlined,
                         label: 'Send\nNotice',

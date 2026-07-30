@@ -493,11 +493,11 @@ class AddressBlock extends StatelessWidget {
           children: [
             Expanded(child: LabeledField(label: 'वडा नं:', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_ward' : null, dataMap: dataMap, readOnly: readOnly)),
             const SizedBox(width: 16),
-            Expanded(child: LabeledField(label: 'टोल:', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_tole' : null, dataMap: dataMap, readOnly: readOnly)),
+            Expanded(child: LabeledField(label: 'टोल (ऐच्छिक):', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_tole' : null, dataMap: dataMap, readOnly: readOnly)),
           ],
         ),
         const SizedBox(height: 12),
-        LabeledField(label: 'घर नं:', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_house' : null, dataMap: dataMap, readOnly: readOnly),
+        LabeledField(label: 'घर नं (ऐच्छिक):', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_house' : null, dataMap: dataMap, readOnly: readOnly),
       ],
     );
   }
@@ -848,19 +848,18 @@ class _SignaturePadState extends State<SignaturePad> {
             borderRadius: BorderRadius.circular(8),
             color: Colors.white,
           ),
-          child: GestureDetector(
-            onPanUpdate: (d) =>
-                setState(() => _points.add(d.localPosition)),
-            onPanEnd: (_) => setState(() => _points.add(null)),
+          child: Listener(
+            onPointerDown: (e) => setState(() => _points.add(e.localPosition)),
+            onPointerMove: (e) => setState(() => _points.add(e.localPosition)),
+            onPointerUp: (_) => setState(() => _points.add(null)),
             child: CustomPaint(
               painter: _SigPainter(_points),
               child: _hasSignature
-                  ? const SizedBox()
+                  ? const SizedBox.expand()
                   : Center(
                       child: Text(
                         'यहाँ दस्तखत गर्नुहोस्',
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                       ),
                     ),
             ),

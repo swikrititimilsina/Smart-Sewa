@@ -45,6 +45,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       _generalNotices = snapshot.docs.map((d) {
         final data = d.data();
         data['isPersonal'] = false;
+        data['id'] = d.id;
         return data;
       }).toList();
       _mergeAndSortNotices();
@@ -61,6 +62,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _userNotices = snapshot.docs.map((d) {
           final data = d.data();
           data['isPersonal'] = true;
+          data['id'] = d.id;
           return data;
         }).toList();
         _mergeAndSortNotices();
@@ -225,6 +227,33 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
                             return GestureDetector(
                               onTap: () => _showNoticeDetail(context, title, message, date, isPersonal),
+                              onLongPress: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text('Delete Notification'),
+                                    content: const Text('Are you sure you want to delete this notification?'),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                                      TextButton(
+                                        onPressed: () async {
+                                          Navigator.pop(ctx);
+                                          try {
+                                            await FirebaseFirestore.instance
+                                                .collection(isPersonal ? 'user_notifications' : 'general_notices')
+                                                .doc(data['id'])
+                                                .delete();
+                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification deleted')));
+                                          } catch (e) {
+                                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: Not permitted to delete this notification.')));
+                                          }
+                                        },
+                                        child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                                 decoration: BoxDecoration(

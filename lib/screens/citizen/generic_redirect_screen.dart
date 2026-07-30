@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../utils/app_colors.dart';
 import 'passport_form_screen.dart';
 import 'birth_reg_form_screen.dart' show BirthFormScreen;
-import 'nid_form_screen.dart'; // From sample
+import 'nid_form_screen.dart';
 import '../../widgets/base64_upload_widget.dart';
+import '../../services/form_draft_service.dart';
 
 enum ServiceType {
   nid('National Identity Card (NID)', 'राष्ट्रिय परिचयपत्र', Icons.credit_card_rounded),
@@ -28,6 +31,15 @@ class GenericRedirectScreen extends StatefulWidget {
 
 class _GenericRedirectScreenState extends State<GenericRedirectScreen> {
   String? _attachedDocumentBase64;
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = FormDraftService.getDraft('redirect_${widget.serviceType.name}');
+    if (draft != null) {
+      _attachedDocumentBase64 = draft['doc'];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,10 +139,38 @@ class _GenericRedirectScreenState extends State<GenericRedirectScreen> {
                 icon: Icons.badge_outlined,
                 title: widget.serviceType.titleNp,
                 subtitle: widget.serviceType.titleEn,
-                onImageChanged: (base64Str) {
+                initialBase64: _attachedDocumentBase64,
+                onImageChanged: (base64Str) async {
                   setState(() {
                     _attachedDocumentBase64 = base64Str;
                   });
+                  if (base64Str != null) {
+                    FormDraftService.saveDraft('redirect_${widget.serviceType.name}', {'doc': base64Str});
+                    
+                    final user = FirebaseAuth.instance.currentUser;
+                    if (user != null) {
+                      try {
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(user.uid)
+                            .collection('documents')
+                            .add({
+                          'title': '${widget.serviceType.titleEn} Existing Document',
+                          'base64': base64Str,
+                          'uploadedAt': FieldValue.serverTimestamp(),
+                        });
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Document saved to My Documents'), backgroundColor: Colors.green),
+                          );
+                        }
+                      } catch (e) {
+                        debugPrint('Error saving doc: $e');
+                      }
+                    }
+                  } else {
+                    FormDraftService.clearDraft('redirect_${widget.serviceType.name}');
+                  }
                 },
               ),
             ),
