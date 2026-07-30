@@ -10,6 +10,11 @@ class AuthService {
   /// This should be called after Firebase.initializeApp()
   static Future<void> initializeAdmin() async {
     try {
+      // If a user is already logged in, do not mess with the auth state
+      if (FirebaseAuth.instance.currentUser != null) {
+        return;
+      }
+
       // First, try to sign in to see if the account exists
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: adminEmail,

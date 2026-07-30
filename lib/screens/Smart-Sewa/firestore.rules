@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isOwner(citizenId) {
+      return isAuthenticated() && request.auth.uid == citizenId;
+    }
+
+    // ── Users ──
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ── Applications ──
+    match /applications/{appId} {
+      allow create: if isAuthenticated();
+      allow read:   if isAuthenticated() && (isOwner(resource.data.citizenId) || isAdmin());
+      // Citizen can update only isHidden field (soft delete); admin can update anything
+      allow update: if isAdmin() ||
+                       (isAuthenticated() &&
+                        isOwner(resource.data.citizenId) &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isHidden']));
+      allow delete: if isAdmin();
+    }
+
+    // ── General notices ──
+    match /general_notices/{noticeId} {
+      allow read:  if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ── User notifications ──
+    match /user_notifications/{notifId} {
+      allow read:   if isAuthenticated() && isOwner(resource.data.citizenId);
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}

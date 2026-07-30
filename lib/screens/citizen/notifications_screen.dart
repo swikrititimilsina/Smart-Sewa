@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../utils/app_colors.dart';
 
 class NotificationsScreen extends StatefulWidget {
-  /// Called when this tab is opened so the parent can reset the badge count.
   final VoidCallback? onViewed;
 
   const NotificationsScreen({super.key, this.onViewed});
@@ -13,13 +14,86 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
+  List<Map<String, dynamic>> _allNotices = [];
+  bool _isLoading = true;
+  String? _error;
+
+  StreamSubscription? _generalSub;
+  StreamSubscription? _userSub;
+
+  List<Map<String, dynamic>> _generalNotices = [];
+  List<Map<String, dynamic>> _userNotices = [];
+
   @override
   void initState() {
     super.initState();
-    // Tell parent the tab was opened → reset badge
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.onViewed?.call();
     });
+
+    _subscribeToNotices();
+  }
+
+  void _subscribeToNotices() {
+    final user = FirebaseAuth.instance.currentUser;
+
+    _generalSub = FirebaseFirestore.instance
+        .collection('general_notices')
+        .orderBy('postedAt', descending: true)
+        .snapshots()
+        .listen((snapshot) {
+      _generalNotices = snapshot.docs.map((d) {
+        final data = d.data();
+        data['isPersonal'] = false;
+        return data;
+      }).toList();
+      _mergeAndSortNotices();
+    }, onError: (e) {
+      setState(() { _error = e.toString(); _isLoading = false; });
+    });
+
+    if (user != null) {
+      _userSub = FirebaseFirestore.instance
+          .collection('user_notifications')
+          .where('citizenId', isEqualTo: user.uid)
+          .snapshots()
+          .listen((snapshot) {
+        _userNotices = snapshot.docs.map((d) {
+          final data = d.data();
+          data['isPersonal'] = true;
+          return data;
+        }).toList();
+        _mergeAndSortNotices();
+      }, onError: (e) {
+        setState(() { _error = e.toString(); _isLoading = false; });
+      });
+    }
+  }
+
+  void _mergeAndSortNotices() {
+    final combined = [..._generalNotices, ..._userNotices];
+    combined.sort((a, b) {
+      final tsA = a['postedAt'] as Timestamp?;
+      final tsB = b['postedAt'] as Timestamp?;
+      if (tsA == null && tsB == null) return 0;
+      if (tsA == null) return 1;
+      if (tsB == null) return -1;
+      return tsB.compareTo(tsA);
+    });
+
+    if (mounted) {
+      setState(() {
+        _allNotices = combined;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _generalSub?.cancel();
+    _userSub?.cancel();
+    super.dispose();
   }
 
   String _formatDate(DateTime dt) {
@@ -32,7 +106,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return '${dt.day}/${dt.month}/${dt.year}';
   }
 
-  void _showNoticeDetail(BuildContext context, String title, String message, String date) {
+  void _showNoticeDetail(BuildContext context, String title, String message, String date, bool isPersonal) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -47,82 +121,49 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Drag handle
             Center(
               child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
               ),
             ),
             const SizedBox(height: 20),
-
-            // Icon + title
             Row(
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 44, height: 44,
                   decoration: BoxDecoration(
-                    color: AppColors.teal.withOpacity(0.12),
+                    color: isPersonal ? Colors.blue.withOpacity(0.12) : AppColors.teal.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.campaign_outlined,
-                      color: AppColors.navy, size: 24),
+                  child: Icon(
+                    isPersonal ? Icons.person_outline : Icons.campaign_outlined,
+                    color: isPersonal ? Colors.blue : AppColors.navy, size: 24,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.navy),
-                  ),
+                  child: Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.navy)),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-
-            // Date
-            Text(
-              date,
-              style: TextStyle(
-                  fontSize: 12, color: AppColors.navy.withOpacity(0.4)),
-            ),
+            Text(date, style: TextStyle(fontSize: 12, color: AppColors.navy.withOpacity(0.4))),
             const SizedBox(height: 12),
-
-            // Divider
             Divider(color: AppColors.navy.withOpacity(0.1)),
             const SizedBox(height: 12),
-
-            // Full message
-            Text(
-              message,
-              style: TextStyle(
-                  fontSize: 14,
-                  height: 1.6,
-                  color: AppColors.navy.withOpacity(0.75)),
-            ),
+            Text(message, style: TextStyle(fontSize: 14, height: 1.6, color: AppColors.navy.withOpacity(0.75))),
             const SizedBox(height: 24),
-
-            // Close button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.navy,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text('Close',
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w700)),
+                child: const Text('Close', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -142,167 +183,79 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             Expanded(
               child: Text(
                 'Notifications',
-                style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.navy),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.navy),
               ),
             ),
           ],
         ),
         const SizedBox(height: 4),
         const Text(
-          'General announcements from admin',
-          style: TextStyle(
-              fontSize: 13,
-              color: AppColors.teal,
-              fontWeight: FontWeight.w500),
+          'General announcements and personal updates',
+          style: TextStyle(fontSize: 13, color: AppColors.teal, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 20),
-
-        // ── Real-time stream from Firestore ──
         Expanded(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('general_notices')
-                .orderBy('postedAt', descending: true)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(color: AppColors.teal),
-                );
-              }
-              if (snapshot.hasError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.cloud_off_rounded,
-                          size: 64, color: AppColors.navy.withOpacity(0.2)),
-                      const SizedBox(height: 12),
-                      Text('Could not load notifications.',
-                          style: TextStyle(
-                              color: AppColors.navy.withOpacity(0.4),
-                              fontSize: 15)),
-                    ],
-                  ),
-                );
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.notifications_off_outlined,
-                          size: 72,
-                          color: AppColors.navy.withOpacity(0.2)),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No new notifications',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.navy.withOpacity(0.4)),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Admin announcements will appear here.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.navy.withOpacity(0.3)),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              final docs = snapshot.data!.docs;
-              return ListView.separated(
-                itemCount: docs.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final data = docs[index].data() as Map<String, dynamic>;
-                  final ts = data['postedAt'] as Timestamp?;
-                  final date = ts != null
-                      ? _formatDate(ts.toDate())
-                      : 'Just now';
-                  final title = data['title'] ?? 'Notice';
-                  final message = data['message'] ?? '';
-
-                  // ── Collapsed Card: only title + date visible ──
-                  return GestureDetector(
-                    onTap: () =>
-                        _showNoticeDetail(context, title, message, date),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        color: AppColors.teal.withOpacity(0.06),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                            color: AppColors.teal.withOpacity(0.3), width: 1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.navy.withOpacity(0.06),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator(color: AppColors.teal))
+              : _error != null
+                  ? Center(child: Text('Error: $_error'))
+                  : _allNotices.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.notifications_off_outlined, size: 72, color: AppColors.navy.withOpacity(0.2)),
+                              const SizedBox(height: 16),
+                              Text('No new notifications', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.navy.withOpacity(0.4))),
+                              const SizedBox(height: 6),
+                              Text('Admin announcements will appear here.', textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: AppColors.navy.withOpacity(0.3))),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          // Icon
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: AppColors.teal.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.campaign_outlined,
-                                color: AppColors.navy, size: 22),
-                          ),
-                          const SizedBox(width: 12),
+                        )
+                      : ListView.separated(
+                          itemCount: _allNotices.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final data = _allNotices[index];
+                            final ts = data['postedAt'] as Timestamp?;
+                            final date = ts != null ? _formatDate(ts.toDate()) : 'Just now';
+                            final title = data['title'] ?? 'Notice';
+                            final message = data['message'] ?? '';
+                            final isPersonal = data['isPersonal'] ?? false;
 
-                          // Title + date
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  title,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.navy,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                            return GestureDetector(
+                              onTap: () => _showNoticeDetail(context, title, message, date, isPersonal),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                decoration: BoxDecoration(
+                                  color: isPersonal ? Colors.blue.withOpacity(0.06) : AppColors.teal.withOpacity(0.06),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: isPersonal ? Colors.blue.withOpacity(0.3) : AppColors.teal.withOpacity(0.3), width: 1),
+                                  boxShadow: [
+                                    BoxShadow(color: AppColors.navy.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 3)),
+                                  ],
                                 ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  date,
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.navy.withOpacity(0.4)),
+                                child: Row(
+                                  children: [
+                                    Icon(isPersonal ? Icons.person_outline : Icons.campaign_outlined, color: isPersonal ? Colors.blue : AppColors.navy, size: 28),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.navy)),
+                                          const SizedBox(height: 2),
+                                          Text(date, style: TextStyle(fontSize: 12, color: AppColors.navy.withOpacity(0.5))),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.teal, size: 14),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ),
-
-                          // Tap hint arrow
-                          Icon(Icons.chevron_right_rounded,
-                              color: AppColors.navy.withOpacity(0.3)),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
+                              ),
+                            );
+                          },
+                        ),
         ),
       ],
     );

@@ -80,14 +80,23 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
     super.initState();
     _loadSeenCount(); // Load from Firestore
     
-    // Keep _totalCount in sync with Firestore
-    FirebaseFirestore.instance
-        .collection('general_notices')
-        .snapshots()
-        .listen((snapshot) {
+    final user = FirebaseAuth.instance.currentUser;
+    int generalCount = 0;
+    int personalCount = 0;
+
+    FirebaseFirestore.instance.collection('general_notices').snapshots().listen((snapshot) {
       if (!mounted) return;
-      setState(() => _totalCount = snapshot.docs.length);
+      generalCount = snapshot.docs.length;
+      setState(() => _totalCount = generalCount + personalCount);
     });
+
+    if (user != null) {
+      FirebaseFirestore.instance.collection('user_notifications').where('citizenId', isEqualTo: user.uid).snapshots().listen((snapshot) {
+        if (!mounted) return;
+        personalCount = snapshot.docs.length;
+        setState(() => _totalCount = generalCount + personalCount);
+      });
+    }
   }
 
   Future<void> _loadSeenCount() async {
@@ -143,14 +152,17 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                 style: TextStyle(color: AppColors.teal, fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               UserSession.loggedInName  = '';
               UserSession.loggedInPhone = '';
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false,
-              );
+              await FirebaseAuth.instance.signOut();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,

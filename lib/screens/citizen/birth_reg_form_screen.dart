@@ -4,17 +4,20 @@ import 'package:smartsewa/widgets/birth_widgets.dart';
 import 'package:smartsewa/utils/app_colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:smartsewa/widgets/attached_document_viewer.dart';
 
 class BirthFormScreen extends StatefulWidget {
   final bool readOnly;
   final Map<String, dynamic>? initialData;
   final bool asSubView;
+  final String? attachedDocumentBase64;
 
   const BirthFormScreen({
     super.key,
     this.readOnly = false,
     this.initialData,
     this.asSubView = false,
+    this.attachedDocumentBase64,
   });
 
   @override
@@ -63,15 +66,20 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
         throw Exception('You must be logged in to submit a form.');
       }
 
-      await FirebaseFirestore.instance.collection('applications').add({
-        'applicant': 'Applicant',
-        'citizenId': user.uid,
-        'title': 'Birth Registration Application',
+      final appData = {
         'type': 'Birth Registration',
+        'userId': user.uid,
+        'citizenId': user.uid,
+        'applicantName': '${_formData['childFirstName'] ?? ''} ${_formData['childLastName'] ?? ''}'.trim(),
         'status': 'Pending',
-        'formData': _formData,
         'createdAt': FieldValue.serverTimestamp(),
-      });
+        'formData': _formData,
+        'isHidden': false,
+        if (widget.attachedDocumentBase64 != null)
+          'attachedDocumentBase64': widget.attachedDocumentBase64,
+      };
+
+      await FirebaseFirestore.instance.collection('applications').add(appData);
 
       if (mounted) Navigator.pop(context);
 
@@ -131,8 +139,11 @@ class _BirthFormScreenState extends State<BirthFormScreen> {
                     _buildSection2(),
                     _buildSection3(),
                     _buildSignatory(),
+                    const SizedBox(height: 16),
+                    if (widget.readOnly || widget.attachedDocumentBase64 != null)
+                      AttachedDocumentViewer(base64String: widget.attachedDocumentBase64),
                     if (!widget.readOnly) _buildButtons(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),

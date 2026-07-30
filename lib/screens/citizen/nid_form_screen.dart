@@ -8,17 +8,20 @@ import 'package:smartsewa/utils/pdf_capture_helper.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:smartsewa/widgets/attached_document_viewer.dart';
 
 class NIDFormScreen extends StatefulWidget {
   final bool readOnly;
   final Map<String, dynamic>? initialData;
   final bool asSubView;
+  final String? attachedDocumentBase64;
 
   const NIDFormScreen({
     super.key,
     this.readOnly = false,
     this.initialData,
     this.asSubView = false,
+    this.attachedDocumentBase64,
   });
 
   @override
@@ -77,15 +80,20 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
           throw Exception('You must be logged in to submit a form.');
         }
 
-        await FirebaseFirestore.instance.collection('applications').add({
-          'applicant': '${_formData['firstName_eng'] ?? ''} ${_formData['lastName_eng'] ?? ''}'.trim().isNotEmpty ? '${_formData['firstName_eng'] ?? ''} ${_formData['lastName_eng'] ?? ''}' : 'Applicant',
-          'citizenId': user.uid,
-          'title': 'NID Registration',
+        final appData = {
           'type': 'NID Registration',
+          'userId': user.uid,
+          'citizenId': user.uid,
+          'applicantName': '${_formData['firstName_eng'] ?? ''} ${_formData['lastName_eng'] ?? ''}'.trim(),
           'status': 'Pending',
-          'formData': _formData,
           'createdAt': FieldValue.serverTimestamp(),
-        });
+          'formData': _formData,
+          'isHidden': false,
+          if (widget.attachedDocumentBase64 != null)
+            'attachedDocumentBase64': widget.attachedDocumentBase64,
+        };
+
+        await FirebaseFirestore.instance.collection('applications').add(appData);
 
         if (mounted) Navigator.pop(context);
 
@@ -307,8 +315,11 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
             child: Column(
               children: [
                 _buildFormContent(isPdfCapture: widget.readOnly),
+                const SizedBox(height: 16),
+                if (widget.readOnly || widget.attachedDocumentBase64 != null)
+                  AttachedDocumentViewer(base64String: widget.attachedDocumentBase64),
                 if (!widget.readOnly) _buildButtons(),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
               ],
             ),
           ),

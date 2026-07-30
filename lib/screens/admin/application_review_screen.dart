@@ -33,30 +33,33 @@ class _ApplicationReviewScreenState extends State<ApplicationReviewScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(context); // close confirm dialog
+              if (!mounted) return;
               showDialog(
                 context: context,
                 barrierDismissible: false,
                 builder: (_) => const Center(child: CircularProgressIndicator()),
               );
               try {
-                final batch = FirebaseFirestore.instance.batch();
-                for (String id in _selectedIds) {
-                  batch.delete(FirebaseFirestore.instance.collection('applications').doc(id));
+                final ids = Set<String>.from(_selectedIds);
+                for (String id in ids) {
+                  // Soft delete — hidden from UI but kept in database
+                  await FirebaseFirestore.instance.collection('applications').doc(id).update({'isHidden': true});
                 }
-                await batch.commit();
+                if (!mounted) return;
+                Navigator.pop(context); // close loading
                 setState(() {
                   _isSelectMode = false;
                   _selectedIds.clear();
                 });
-                if (mounted) Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Forms deleted successfully'), backgroundColor: Colors.green)
+                  const SnackBar(content: Text('Forms removed successfully'), backgroundColor: Colors.green)
                 );
               } catch (e) {
-                if (mounted) Navigator.pop(context);
+                if (!mounted) return;
+                Navigator.pop(context); // close loading
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error deleting forms: $e'), backgroundColor: Colors.red)
+                  SnackBar(content: Text('Delete failed: $e'), backgroundColor: Colors.red, duration: const Duration(seconds: 6))
                 );
               }
             },
@@ -143,7 +146,6 @@ class _ApplicationReviewScreenState extends State<ApplicationReviewScreen> {
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('applications')
-                        .orderBy('createdAt', descending: true)
                         .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -154,9 +156,23 @@ class _ApplicationReviewScreenState extends State<ApplicationReviewScreen> {
                       }
 
                       final allDocs = snapshot.data?.docs ?? [];
+                      // Filter out soft-deleted (hidden) and apply type filter
+                      final visibleDocs = allDocs.where((d) {
+                        final app = d.data() as Map<String, dynamic>;
+                        return app['isHidden'] != true;
+                      }).toList();
+                      // Sort by createdAt descending in memory
+                      visibleDocs.sort((a, b) {
+                        final aTs = (a.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
+                        final bTs = (b.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
+                        if (aTs == null && bTs == null) return 0;
+                        if (aTs == null) return 1;
+                        if (bTs == null) return -1;
+                        return bTs.compareTo(aTs);
+                      });
                       final applications = _selectedFilter == 'All'
-                          ? allDocs
-                          : allDocs.where((d) {
+                          ? visibleDocs
+                          : visibleDocs.where((d) {
                               final app = d.data() as Map<String, dynamic>;
                               return (app['type'] ?? '') == _selectedFilter;
                             }).toList();

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert' as dart_convert;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/status_badge_widget.dart';
@@ -18,6 +19,7 @@ class AdminFormViewerScreen extends StatefulWidget {
   final String applicantName;
   final String applicationType;
   final String status;
+  final bool isCitizenMode;
 
   const AdminFormViewerScreen({
     super.key,
@@ -25,6 +27,7 @@ class AdminFormViewerScreen extends StatefulWidget {
     required this.applicantName,
     required this.applicationType,
     required this.status,
+    this.isCitizenMode = false,
   });
 
   @override
@@ -42,10 +45,24 @@ class _AdminFormViewerScreenState extends State<AdminFormViewerScreen> {
 
   Future<void> _updateStatus(String newStatus) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('applications')
-          .doc(widget.applicationId)
-          .update({'status': newStatus});
+      final appRef = FirebaseFirestore.instance.collection('applications').doc(widget.applicationId);
+      final appDoc = await appRef.get();
+      
+      await appRef.update({'status': newStatus});
+      
+      if (appDoc.exists) {
+        final data = appDoc.data() as Map<String, dynamic>;
+        final citizenId = data['citizenId'] ?? data['userId'];
+        if (citizenId != null) {
+          await FirebaseFirestore.instance.collection('user_notifications').add({
+            'citizenId': citizenId,
+            'title': 'Application Update',
+            'message': 'Your ${widget.applicationType} application is now $newStatus.',
+            'postedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+      
       setState(() => _currentStatus = newStatus);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -102,11 +119,12 @@ class _AdminFormViewerScreenState extends State<AdminFormViewerScreen> {
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
           final formData = Map<String, dynamic>.from(data['formData'] ?? {});
+          final attachedDocumentBase64 = data['attachedDocumentBase64'] as String?;
 
           return Column(
             children: [
               Expanded(
-                child: _buildFormPreview(formData),
+                child: _buildFormPreview(formData, attachedDocumentBase64),
               ),
               _buildActionBar(),
             ],
@@ -117,36 +135,32 @@ class _AdminFormViewerScreenState extends State<AdminFormViewerScreen> {
   }
 
   // ── Build the read-only form based on application type ──────────────────
-  Widget _buildFormPreview(Map<String, dynamic> formData) {
+  Widget _buildFormPreview(Map<String, dynamic> formData, String? attachedDocumentBase64) {
     switch (widget.applicationType) {
       case 'NID Registration':
-        return NIDFormScreen(readOnly: true, initialData: formData, asSubView: true);
+        return NIDFormScreen(readOnly: true, initialData: formData, asSubView: true, attachedDocumentBase64: attachedDocumentBase64);
       case 'Citizenship':
-        return CitizenshipFormScreen(readOnly: true, initialData: formData, asSubView: true);
+        return CitizenshipFormScreen(readOnly: true, initialData: formData, asSubView: true, attachedDocumentBase64: attachedDocumentBase64);
       case 'Copy of Original — Surname Change':
-        return CitizenshipFormScreen(readOnly: true, initialData: formData, asSubView: true, formType: CitizenshipFormType.surnameChange);
+        return CitizenshipFormScreen(readOnly: true, initialData: formData, asSubView: true, formType: CitizenshipFormType.surnameChange, attachedDocumentBase64: attachedDocumentBase64);
       case 'Migration':
-        return CitizenshipFormScreen(readOnly: true, initialData: formData, asSubView: true, formType: CitizenshipFormType.migration);
+        return CitizenshipFormScreen(readOnly: true, initialData: formData, asSubView: true, formType: CitizenshipFormType.migration, attachedDocumentBase64: attachedDocumentBase64);
       case 'Birth Registration':
-        return BirthFormScreen(readOnly: true, initialData: formData, asSubView: true);
+        return BirthFormScreen(readOnly: true, initialData: formData, asSubView: true, attachedDocumentBase64: attachedDocumentBase64);
       case 'Passport':
-        return PassportFormScreen(readOnly: true, initialData: formData, asSubView: true);
+        return PassportFormScreen(readOnly: true, initialData: formData, asSubView: true, attachedDocumentBase64: attachedDocumentBase64);
       default:
-        return SingleChildScrollView(child: _buildGenericPreview(formData));
+        return SingleChildScrollView(child: _buildGenericPreview(formData, attachedDocumentBase64));
     }
   }
 
   Widget _buildActionBar() {
-    return Container(
-      padding: const EdgeInsets.all(16),
+    return widget.isCitizenMode ? const SizedBox.shrink() : Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            offset: const Offset(0, -4),
-            blurRadius: 10,
-          )
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4)),
         ],
       ),
       child: Row(
@@ -169,15 +183,37 @@ class _AdminFormViewerScreenState extends State<AdminFormViewerScreen> {
     );
   }
 
-  Widget _buildGenericPreview(Map<String, dynamic> data) {
+  Widget _buildGenericPreview(Map<String, dynamic> data, String? attachedDocumentBase64) {
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: data.entries.map((e) => Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Text(': '),
-        )).toList(),
+        children: [
+          ...data.entries.map((e) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text('${e.key}: ${e.value}'),
+          )).toList(),
+          if (attachedDocumentBase64 != null) ...[
+            const SizedBox(height: 20),
+            const Text('Attached Document:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Container(
+              height: 200,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.memory(
+                  dart_convert.base64Decode(attachedDocumentBase64),
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ]
+        ],
       ),
     );
   }

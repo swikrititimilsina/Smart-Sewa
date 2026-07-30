@@ -5,13 +5,21 @@ import 'package:smartsewa/widgets/passport_widgets.dart';
 import 'package:smartsewa/utils/app_colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:smartsewa/widgets/attached_document_viewer.dart';
 
 class PassportFormScreen extends StatefulWidget {
   final bool readOnly;
   final Map<String, dynamic>? initialData;
   final bool asSubView;
+  final String? attachedDocumentBase64;
 
-  const PassportFormScreen({super.key, this.readOnly = false, this.initialData, this.asSubView = false});
+  const PassportFormScreen({
+    super.key,
+    this.readOnly = false,
+    this.initialData,
+    this.asSubView = false,
+    this.attachedDocumentBase64,
+  });
 
   @override
   State<PassportFormScreen> createState() =>
@@ -92,17 +100,20 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
       _formData['docDiplomatic'] = _docDiplomatic;
       _formData['docOfficial'] = _docOfficial;
 
-      await FirebaseFirestore.instance.collection('applications').add({
-        'applicant': 'Applicant',
-        'citizenId': user.uid,
-        'title': 'Passport Application',
-        'type': 'Passport',
-        'status': 'Pending',
-        'formData': _formData,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      if (mounted) Navigator.pop(context);
+        final appData = {
+          'applicant': '${_formData['firstName_eng'] ?? ''} ${_formData['lastName_eng'] ?? ''}'.trim().isNotEmpty ? '${_formData['firstName_eng'] ?? ''} ${_formData['lastName_eng'] ?? ''}' : 'Applicant',
+          'citizenId': user.uid,
+          'title': 'Passport',
+          'type': 'Passport',
+          'status': 'Pending',
+          'formData': _formData,
+          'createdAt': FieldValue.serverTimestamp(),
+          'isHidden': false,
+          if (widget.attachedDocumentBase64 != null)
+            'attachedDocumentBase64': widget.attachedDocumentBase64,
+        };
+        await FirebaseFirestore.instance.collection('applications').add(appData);
+        if (mounted) Navigator.pop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -280,8 +291,11 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildFormContent(),
-                _buildFooter(),
-                const SizedBox(height: 24),
+                if (!widget.readOnly) _buildFooter(),
+                const SizedBox(height: 16),
+                if (widget.readOnly || widget.attachedDocumentBase64 != null)
+                  AttachedDocumentViewer(base64String: widget.attachedDocumentBase64),
+                const SizedBox(height: 32),
               ],
             ),
           ),
