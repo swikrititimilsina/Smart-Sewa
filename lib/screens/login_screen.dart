@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/app_colors.dart';
-import '../utils/demo_credentials.dart';
 import '../models/user_model.dart';
 import '../widgets/logo_badge_widget.dart';
 import 'citizen/citizen_dashboard_screen.dart';
 import 'admin/admin_dashboard_screen.dart';
 import 'auth/forgot_password_screen.dart';
 import 'auth/register_screen.dart';
+import '../services/biometric_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,9 +23,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   bool _isLoading       = false;
   String? _errorMessage;
 
-  final _phoneController    = TextEditingController();
+  final _emailController    = TextEditingController();
   final _passwordController = TextEditingController();
-  final _usernameController = TextEditingController();
 
   late AnimationController _cardController;
   late Animation<double> _cardOpacity;
@@ -40,13 +41,33 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         .animate(CurvedAnimation(parent: _cardController, curve: Curves.easeOut));
   }
 
+  Future<void> _checkBiometricLogin() async {
+    // Email must be typed first — biometric lookup is keyed per email
+    final typedEmail = _emailController.text.trim();
+    if (typedEmail.isEmpty) return;
+
+    // Check if THIS specific email (citizen or admin) has biometric enabled
+    final isEnabled = await BiometricService.isBiometricEnabled(typedEmail);
+    if (!isEnabled) return;
+
+    // Load credentials saved for this specific email
+    final creds = await BiometricService.getCredentials(typedEmail);
+    if (creds == null || creds['email']!.isEmpty) return;
+
+    // Trigger fingerprint/face scanner
+    final success = await BiometricService.authenticate();
+    if (success && mounted) {
+      _passwordController.text = creds['password']!;
+      _handleLogin();
+    }
+  }
+
   @override
   void dispose() {
     _cardController.dispose();
     _tabController.dispose();
-    _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
-    _usernameController.dispose();
     super.dispose();
   }
 
@@ -57,36 +78,77 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   Future<void> _handleLogin() async {
-    setState(() { _isLoading = true; _errorMessage = null; });
-    await Future.delayed(const Duration(milliseconds: 1500));
+    final email    = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-    if (_isCitizen) {
-      final phone    = _phoneController.text.trim();
-      final password = _passwordController.text.trim();
-      if (phone.isEmpty || password.isEmpty) {
-        setState(() { _errorMessage = 'Please enter phone and password.'; _isLoading = false; });
-        return;
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Please enter email and password.');
+      return;
+    }
+
+    setState(() { _isLoading = true; _errorMessage = null; });
+
+    try {
+      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (userCredential.user != null) {
+        // Fetch user document from Firestore
+        final docSnapshot = await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).get();
+        
+        if (docSnapshot.exists) {
+          final data = docSnapshot.data() as Map<String, dynamic>;
+          final role = data['role'] ?? 'citizen';
+          final name = data['name'] ?? email.split('@')[0];
+
+          UserSession.loggedInName = name;
+          UserSession.loggedInPhone = data['phone'] ?? '';
+          UserSession.loggedInEmail = email;
+          UserSession.loggedInProfileImageBase64 = data['profileImageBase64'] ?? '';
+
+          if (mounted) {
+            if (role == 'admin') {
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminHomeScreen()));
+            } else {
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const CitizenHomeScreen()));
+            }
+          }
+        } else {
+          // Fallback if no Firestore doc exists (e.g. legacy account)
+          UserSession.loggedInName = userCredential.user?.displayName ?? email.split('@')[0];
+          UserSession.loggedInPhone = '';
+          UserSession.loggedInEmail = email;
+          UserSession.loggedInProfileImageBase64 = '';
+          
+          bool isAdminEmail = email.toLowerCase() == 'admin@smartsewa.com';
+          
+          if (isAdminEmail) {
+            // Create the admin doc so Firestore Rules' isAdmin() works
+            await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+              'name': 'Admin',
+              'email': email,
+              'role': 'admin',
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+          }
+          
+          if (mounted) {
+            if (isAdminEmail) {
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminHomeScreen()));
+            } else {
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const CitizenHomeScreen()));
+            }
+          }
+        }
       }
-      if (phone == DemoCredentials.citizenPhone && password == DemoCredentials.citizenPassword) {
-        UserSession.loggedInName  = DemoCredentials.citizenName;
-        UserSession.loggedInPhone = phone;
-        if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const CitizenHomeScreen()));
-      } else {
-        setState(() { _errorMessage = 'Invalid phone number or password.'; _isLoading = false; });
-      }
-    } else {
-      final username = _usernameController.text.trim();
-      final password = _passwordController.text.trim();
-      if (username.isEmpty || password.isEmpty) {
-        setState(() { _errorMessage = 'Please enter username and password.'; _isLoading = false; });
-        return;
-      }
-      if (username == DemoCredentials.adminUsername && password == DemoCredentials.adminPassword) {
-        UserSession.loggedInName = DemoCredentials.adminName;
-        if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminHomeScreen()));
-      } else {
-        setState(() { _errorMessage = 'Invalid username or password.'; _isLoading = false; });
-      }
+    } on FirebaseAuthException catch (e) {
+      setState(() { _errorMessage = e.message ?? 'Invalid credentials.'; });
+    } catch (e) {
+      setState(() { _errorMessage = 'An error occurred.'; });
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -183,10 +245,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (_isCitizen) ...[
-          _phoneField(),
+          _inputField(icon: Icons.email_outlined, hint: 'Enter Email Address', controller: _emailController, keyboardType: TextInputType.emailAddress),
           const SizedBox(height: 14),
         ] else ...[
-          _inputField(icon: Icons.person_outline, hint: 'Enter Username', controller: _usernameController),
+          _inputField(icon: Icons.email_outlined, hint: 'Enter Admin Email', controller: _emailController, keyboardType: TextInputType.emailAddress),
           const SizedBox(height: 14),
         ],
         _inputField(
@@ -194,6 +256,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           hint: 'Enter Password',
           controller: _passwordController,
           obscure: _obscurePassword,
+          onTap: _checkBiometricLogin,
           suffix: IconButton(
             icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                 color: AppColors.navy.withOpacity(0.5), size: 20),
@@ -262,47 +325,17 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             border: Border.all(color: AppColors.navy.withOpacity(0.15)),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Demo Credentials', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.navy)),
+            const Text('Demo Credentials (Firebase)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.navy)),
             const SizedBox(height: 4),
             if (_isCitizen) ...[
-              Text('Phone: ${DemoCredentials.citizenPhone}',       style: TextStyle(fontSize: 11, color: AppColors.navy.withOpacity(0.8))),
-              Text('Password: ${DemoCredentials.citizenPassword}', style: TextStyle(fontSize: 11, color: AppColors.navy.withOpacity(0.8))),
+              Text('Email: user@smartsewa.com (Register a new one)', style: TextStyle(fontSize: 11, color: AppColors.navy.withOpacity(0.8))),
             ] else ...[
-              Text('Username: ${DemoCredentials.adminUsername}',   style: TextStyle(fontSize: 11, color: AppColors.navy.withOpacity(0.8))),
-              Text('Password: ${DemoCredentials.adminPassword}',   style: TextStyle(fontSize: 11, color: AppColors.navy.withOpacity(0.8))),
+              Text('Email: admin@smartsewa.com', style: TextStyle(fontSize: 11, color: AppColors.navy.withOpacity(0.8))),
+              Text('Password: admin123', style: TextStyle(fontSize: 11, color: AppColors.navy.withOpacity(0.8))),
             ],
           ]),
         ),
       ],
-    );
-  }
-
-  Widget _phoneField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 3))],
-      ),
-      child: Row(children: [
-        const SizedBox(width: 16),
-        Icon(Icons.phone_outlined, color: AppColors.navy.withOpacity(0.5), size: 20),
-        const SizedBox(width: 8),
-        const Text('+977 ', style: TextStyle(fontSize: 13, color: AppColors.navy, fontWeight: FontWeight.w500)),
-        Expanded(
-          child: TextField(
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            style: const TextStyle(fontSize: 14, color: AppColors.navy),
-            decoration: InputDecoration(
-              hintText: 'Enter 10-digit Mobile Number',
-              hintStyle: TextStyle(fontSize: 13, color: AppColors.navy.withOpacity(0.45)),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-          ),
-        ),
-      ]),
     );
   }
 
@@ -313,6 +346,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     bool obscure = false,
     Widget? suffix,
     TextInputType keyboardType = TextInputType.text,
+    VoidCallback? onTap,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -324,6 +358,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         controller: controller,
         obscureText: obscure,
         keyboardType: keyboardType,
+        onTap: onTap,
         style: const TextStyle(fontSize: 14, color: AppColors.navy),
         decoration: InputDecoration(
           prefixIcon: Icon(icon, color: AppColors.navy.withOpacity(0.5), size: 20),

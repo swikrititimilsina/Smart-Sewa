@@ -1,10 +1,30 @@
 // lib/screens/citizen/citizenship_redirect_screen.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../utils/app_colors.dart';
 import 'citizenship_apply_screen.dart';
+import '../../widgets/base64_upload_widget.dart';
+import '../../services/form_draft_service.dart';
 
-class CitizenshipRedirectScreen extends StatelessWidget {
+class CitizenshipRedirectScreen extends StatefulWidget {
   const CitizenshipRedirectScreen({super.key});
+
+  @override
+  State<CitizenshipRedirectScreen> createState() => _CitizenshipRedirectScreenState();
+}
+
+class _CitizenshipRedirectScreenState extends State<CitizenshipRedirectScreen> {
+  String? _attachedDocumentBase64;
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = FormDraftService.getDraft('redirect_citizenship');
+    if (draft != null) {
+      _attachedDocumentBase64 = draft['doc'];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +108,44 @@ class CitizenshipRedirectScreen extends StatelessWidget {
               subtitle: 'आफ्नो कागजातहरू अपलोड गर्नुहोस्',
             ),
             const SizedBox(height: 10),
-            _UploadDocumentCard(context: context),
+            Base64UploadWidget(
+              icon: Icons.badge_outlined,
+              title: 'नागरिकताको प्रमाणपत्र',
+              subtitle: 'Citizenship Certificate',
+              initialBase64: _attachedDocumentBase64,
+              onImageChanged: (base64Str) async {
+                setState(() {
+                  _attachedDocumentBase64 = base64Str;
+                });
+                if (base64Str != null) {
+                  FormDraftService.saveDraft('redirect_citizenship', {'doc': base64Str});
+                  
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user != null) {
+                    try {
+                      await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(user.uid)
+                          .collection('documents')
+                          .add({
+                        'title': 'Citizenship Existing Document',
+                        'base64': base64Str,
+                        'uploadedAt': FieldValue.serverTimestamp(),
+                      });
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Document saved to My Documents'), backgroundColor: Colors.green),
+                        );
+                      }
+                    } catch (e) {
+                      debugPrint('Error saving doc: $e');
+                    }
+                  }
+                } else {
+                  FormDraftService.clearDraft('redirect_citizenship');
+                }
+              },
+            ),
 
             const SizedBox(height: 28),
 
@@ -99,7 +156,7 @@ class CitizenshipRedirectScreen extends StatelessWidget {
               subtitle: 'नयाँ आवेदन दिनुहोस्',
             ),
             const SizedBox(height: 10),
-            _ApplyOptionsCard(context: context),
+            _ApplyOptionsCard(context: context, attachedDocumentBase64: _attachedDocumentBase64),
 
             const SizedBox(height: 20),
           ],
@@ -152,175 +209,11 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ── Upload documents card ──────────────────────────────────────────────────
-class _UploadDocumentCard extends StatelessWidget {
-  final BuildContext context;
-  const _UploadDocumentCard({required this.context});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _UploadDocTile(
-            icon: Icons.badge_outlined,
-            title: 'नागरिकताको प्रमाणपत्र',
-            subtitle: 'Citizenship Certificate',
-            onTap: () => _showUploadSnackbar(context, 'Citizenship Certificate'),
-          ),
-          const Divider(height: 1, indent: 56),
-          _UploadDocTile(
-            icon: Icons.people_outline,
-            title: 'बाबु / आमाको नागरिकता',
-            subtitle: "Parent's Citizenship",
-            onTap: () =>
-                _showUploadSnackbar(context, "Parent's Citizenship"),
-          ),
-          const Divider(height: 1, indent: 56),
-          _UploadDocTile(
-            icon: Icons.calendar_today_outlined,
-            title: 'जन्मदर्ता प्रमाणपत्र',
-            subtitle: 'Birth Certificate',
-            onTap: () => _showUploadSnackbar(context, 'Birth Certificate'),
-            isLast: true,
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showUploadSnackbar(BuildContext context, String name) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('📎 $name upload — coming soon'),
-        backgroundColor: AppColors.navy,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-}
-
-class _UploadDocTile extends StatefulWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  final bool isLast;
-
-  const _UploadDocTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.isLast = false,
-  });
-
-  @override
-  State<_UploadDocTile> createState() => _UploadDocTileState();
-}
-
-class _UploadDocTileState extends State<_UploadDocTile> {
-  bool _uploaded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.vertical(
-        top: const Radius.circular(0),
-        bottom: widget.isLast ? const Radius.circular(14) : Radius.zero,
-      ),
-      onTap: () {
-        setState(() => _uploaded = !_uploaded);
-        if (!_uploaded) widget.onTap();
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.navy.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(widget.icon,
-                  color: AppColors.navy, size: 18),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.navy,
-                    ),
-                  ),
-                  Text(
-                    widget.subtitle,
-                    style: const TextStyle(
-                        fontSize: 11, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              child: _uploaded
-                  ? const Icon(Icons.check_circle,
-                      key: ValueKey('done'),
-                      color: AppColors.teal,
-                      size: 22)
-                  : Container(
-                      key: const ValueKey('upload'),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.navy),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(Icons.upload,
-                              size: 12, color: AppColors.navy),
-                          SizedBox(width: 4),
-                          Text('Upload',
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.navy,
-                                  fontWeight: FontWeight.w600)),
-                        ],
-                      ),
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Apply options card ─────────────────────────────────────────────────────
+// ── Apply options card ───────────────────────────────────────────────────────
 class _ApplyOptionsCard extends StatelessWidget {
   final BuildContext context;
-  const _ApplyOptionsCard({required this.context});
+  final String? attachedDocumentBase64;
+  const _ApplyOptionsCard({required this.context, this.attachedDocumentBase64});
 
   @override
   Widget build(BuildContext context) {

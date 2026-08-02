@@ -1,4 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../utils/app_colors.dart';
 import '../../models/user_model.dart';
 import '../../widgets/service_card_widget.dart';
@@ -9,6 +13,10 @@ import 'notifications_screen.dart';
 import 'chat_screen.dart';
 import 'citizenship_redirect_screen.dart';
 import 'generic_redirect_screen.dart';
+import '../settings_screen.dart';
+import 'report_problem_screen.dart';
+import 'help_support_screen.dart';
+import 'profile_screen.dart';
 
 enum _ServiceState { nid, citizenship, birthReg, passport, disabled }
 
@@ -17,7 +25,8 @@ class _MenuItem {
   final IconData icon;
   final String label;
   final bool isDestructive;
-  const _MenuItem({required this.icon, required this.label, this.isDestructive = false});
+  final VoidCallback? onTap;
+  const _MenuItem({required this.icon, required this.label, this.isDestructive = false, this.onTap});
 }
 
 // ── Bottom sheet widget ──
@@ -47,7 +56,7 @@ class _MenuSheet extends StatelessWidget {
                 color: item.isDestructive ? Colors.red : AppColors.navy,
               ),
             ),
-            onTap: item.isDestructive ? onLogout : () => Navigator.pop(context),
+            onTap: item.isDestructive ? onLogout : (item.onTap ?? () => Navigator.pop(context)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           )),
           const SizedBox(height: 8),
@@ -67,6 +76,52 @@ class CitizenHomeScreen extends StatefulWidget {
 
 class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
   int _currentIndex = 0;
+  int _totalCount = 0; // total notices in Firestore
+  int _seenCount  = 0; // how many the citizen has "seen" (viewed the tab)
+
+  int get _unreadCount => (_totalCount - _seenCount).clamp(0, 99);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSeenCount(); // Load from Firestore
+    
+    final user = FirebaseAuth.instance.currentUser;
+    int generalCount = 0;
+    int personalCount = 0;
+
+    FirebaseFirestore.instance.collection('general_notices').snapshots().listen((snapshot) {
+      if (!mounted) return;
+      generalCount = snapshot.docs.length;
+      setState(() => _totalCount = generalCount + personalCount);
+    });
+
+    if (user != null) {
+      FirebaseFirestore.instance.collection('user_notifications').where('citizenId', isEqualTo: user.uid).snapshots().listen((snapshot) {
+        if (!mounted) return;
+        personalCount = snapshot.docs.length;
+        setState(() => _totalCount = generalCount + personalCount);
+      });
+    }
+  }
+
+  Future<void> _loadSeenCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _seenCount = prefs.getInt('seenNoticeCount') ?? 0;
+    });
+  }
+
+  /// Called when citizen opens the Notifications tab — marks all as seen.
+  void _onNotificationsViewed() async {
+    if (_seenCount == _totalCount) return; // Prevent unnecessary writes
+    
+    setState(() => _seenCount = _totalCount);
+    
+    // Persist to local device storage using SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('seenNoticeCount', _totalCount);
+  }
 
   void _showMenu(BuildContext context) {
     showModalBottomSheet(
@@ -75,11 +130,20 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => _MenuSheet(
-        items: const [
-          _MenuItem(icon: Icons.shield_outlined,      label: 'Settings & Privacy'),
-          _MenuItem(icon: Icons.flag_outlined,         label: 'Report a Problem'),
-          _MenuItem(icon: Icons.help_outline_rounded,  label: 'Help & Support'),
-          _MenuItem(icon: Icons.logout_rounded,        label: 'Log Out', isDestructive: true),
+        items: [
+          _MenuItem(icon: Icons.shield_outlined, label: 'Settings & Privacy', onTap: () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+          }),
+          _MenuItem(icon: Icons.flag_outlined, label: 'Report a Problem', onTap: () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportProblemScreen()));
+          }),
+          _MenuItem(icon: Icons.help_outline_rounded, label: 'Help & Support', onTap: () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen()));
+          }),
+          const _MenuItem(icon: Icons.logout_rounded, label: 'Log Out', isDestructive: true),
         ],
         onLogout: () => _confirmLogout(context),
       ),
@@ -103,14 +167,17 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                 style: TextStyle(color: AppColors.teal, fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               UserSession.loggedInName  = '';
               UserSession.loggedInPhone = '';
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false,
-              );
+              await FirebaseAuth.instance.signOut();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -126,10 +193,10 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> pages = const [
-      _HomeContent(),
-      DocumentsScreen(),
-      NotificationsScreen(),
+    final List<Widget> pages = [
+      const _HomeContent(),
+      const DocumentsScreen(),
+      NotificationsScreen(onViewed: _onNotificationsViewed),
     ];
 
     return Scaffold(
@@ -175,10 +242,40 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
                       ),
                       GestureDetector(
                         onTap: () => setState(() => _currentIndex = 2),
-                        child: NavItem(
-                          icon: Icons.notifications_outlined,
-                          label: 'Notifications',
-                          active: _currentIndex == 2,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            NavItem(
+                              icon: Icons.notifications_outlined,
+                              label: 'Notifications',
+                              active: _currentIndex == 2,
+                            ),
+                            if (_unreadCount > 0)
+                              Positioned(
+                                right: -4,
+                                top: -4,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(
+                                      minWidth: 18, minHeight: 18),
+                                  child: Text(
+                                    _unreadCount > 9
+                                        ? '9+'
+                                        : '$_unreadCount',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ],
@@ -237,37 +334,60 @@ class _HomeContent extends StatelessWidget {
         // ── Top bar ──
         Row(
           children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                border: Border.all(color: AppColors.teal, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.navy.withOpacity(0.15),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+            GestureDetector(
+              onTap: () async {
+                final updated = await Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                if (updated == true && context.mounted) {
+                  state.setState(() {}); // refresh home screen header to show new image/name
+                }
+              },
+              child: Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(color: AppColors.teal, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.navy.withOpacity(0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: UserSession.loggedInProfileImageBase64.isNotEmpty
+                      ? Image.memory(
+                          base64Decode(UserSession.loggedInProfileImageBase64),
+                          fit: BoxFit.cover,
+                        )
+                      : const Icon(Icons.person_rounded, color: AppColors.navy, size: 30),
+                ),
               ),
-              child: const Icon(Icons.person_rounded, color: AppColors.navy, size: 30),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Hi, ${UserSession.loggedInName}',
-                    style: const TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.navy),
-                  ),
-                  const Text('Welcome back!',
-                      style: TextStyle(
-                          fontSize: 11, color: AppColors.teal, fontWeight: FontWeight.w500)),
-                ],
+              child: GestureDetector(
+                onTap: () async {
+                  final updated = await Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                  if (updated == true && context.mounted) {
+                    state.setState(() {});
+                  }
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hi, ${UserSession.loggedInName}',
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.navy),
+                    ),
+                    const Text('Welcome back!',
+                        style: TextStyle(
+                            fontSize: 11, color: AppColors.teal, fontWeight: FontWeight.w500)),
+                  ],
+                ),
               ),
             ),
             Container(

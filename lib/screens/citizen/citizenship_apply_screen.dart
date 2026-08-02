@@ -326,7 +326,7 @@ class _FormOptionCard extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const CitizenshipFormScreen(),
+                      builder: (_) => CitizenshipFormScreen(formType: formType),
                     ),
                   );
                 },

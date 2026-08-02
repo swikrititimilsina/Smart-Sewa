@@ -1,9 +1,5 @@
-// lib/widgets/nid_widgets.dart
 import 'package:flutter/material.dart';
-
-
-const Color kDarkBlue = Color(0xFF0D2B6E);
-const Color kBg = Color(0xFFF0F4FF);
+import '../utils/app_colors.dart';
 
 const List<String> kNepalProvinces = [
   'कोशी प्रदेश (प्रदेश नं. १)',
@@ -56,14 +52,14 @@ class SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: kDarkBlue.withOpacity(0.08),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      color: AppColors.navy.withOpacity(0.06),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 13,
+          fontSize: 14,
           fontWeight: FontWeight.bold,
-          color: kDarkBlue,
+          color: AppColors.navy,
         ),
       ),
     );
@@ -77,8 +73,10 @@ class FormDivider extends StatelessWidget {
   const FormDivider({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      Divider(height: 1, thickness: 1, color: Colors.grey.shade300);
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Divider(height: 1, thickness: 1, color: Colors.grey.shade300),
+      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -89,13 +87,19 @@ class LabeledField extends StatelessWidget {
   final double width;
   final bool required;
   final TextEditingController? controller;
+  final String? fieldKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
 
   const LabeledField({
     super.key,
     required this.label,
-    this.width = 160,
+    this.width = double.infinity,
     this.required = false,
     this.controller,
+    this.fieldKey,
+    this.dataMap,
+    this.readOnly = false,
   });
 
   @override
@@ -109,26 +113,46 @@ class LabeledField extends StatelessWidget {
           RichText(
             text: TextSpan(
               text: label,
-              style: const TextStyle(fontSize: 11, color: Colors.black87),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy),
               children: required
                   ? const [
                       TextSpan(
                         text: ' *',
-                        style: TextStyle(color: Colors.red, fontSize: 11),
+                        style: TextStyle(color: Colors.red, fontSize: 12),
                       ),
                     ]
                   : [],
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 6),
           TextFormField(
             controller: controller,
-            decoration: const InputDecoration(
+            readOnly: readOnly,
+            initialValue: (controller == null && dataMap != null && fieldKey != null) ? dataMap![fieldKey] : null,
+            onChanged: (val) {
+              if (dataMap != null && fieldKey != null) {
+                dataMap![fieldKey!] = val;
+              }
+            },
+            decoration: InputDecoration(
               isDense: true,
-              contentPadding: EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-              border: UnderlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.teal, width: 1.5),
+              ),
+              filled: true,
+              fillColor: Colors.white,
             ),
-            style: const TextStyle(fontSize: 12),
+            style: const TextStyle(fontSize: 13, color: AppColors.navy),
             validator: required
                 ? (v) => (v == null || v.trim().isEmpty) ? 'आवश्यक छ' : null
                 : null,
@@ -147,11 +171,18 @@ class DistrictDropdown extends StatefulWidget {
   final double width;
   final bool required;
 
+  final String? fieldKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
+
   const DistrictDropdown({
     super.key,
     required this.label,
-    this.width = 160,
+    this.width = double.infinity,
     this.required = false,
+    this.fieldKey,
+    this.dataMap,
+    this.readOnly = false,
   });
 
   @override
@@ -160,6 +191,14 @@ class DistrictDropdown extends StatefulWidget {
 
 class _DistrictDropdownState extends State<DistrictDropdown> {
   String? _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.dataMap != null && widget.fieldKey != null) {
+      _selected = widget.dataMap![widget.fieldKey];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,36 +211,56 @@ class _DistrictDropdownState extends State<DistrictDropdown> {
           RichText(
             text: TextSpan(
               text: widget.label,
-              style: const TextStyle(fontSize: 11, color: Colors.black87),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy),
               children: widget.required
                   ? const [
                       TextSpan(
                         text: ' *',
-                        style: TextStyle(color: Colors.red, fontSize: 11),
+                        style: TextStyle(color: Colors.red, fontSize: 12),
                       ),
                     ]
                   : [],
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 6),
           DropdownButtonFormField<String>(
             value: _selected,
             isDense: true,
             isExpanded: true,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               isDense: true,
-              contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-              border: UnderlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.teal, width: 1.5),
+              ),
+              filled: true,
+              fillColor: Colors.white,
             ),
-            hint: const Text(
+            hint: Text(
               'छान्नुहोस्',
-              style: TextStyle(fontSize: 11, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
             ),
-            style: const TextStyle(fontSize: 12, color: Colors.black87),
+            style: const TextStyle(fontSize: 13, color: AppColors.navy),
             items: kNepalDistricts
                 .map((d) => DropdownMenuItem(value: d, child: Text(d)))
                 .toList(),
-            onChanged: (v) => setState(() => _selected = v),
+            onChanged: widget.readOnly
+                ? null
+                : (v) {
+                    setState(() => _selected = v);
+                    if (widget.dataMap != null && widget.fieldKey != null) {
+                      widget.dataMap![widget.fieldKey!] = v;
+                    }
+                  },
             validator: widget.required
                 ? (v) => (v == null || v.isEmpty) ? 'आवश्यक छ' : null
                 : null,
@@ -219,10 +278,17 @@ class ProvinceDropdown extends StatefulWidget {
   final String label;
   final bool required;
 
+  final String? fieldKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
+
   const ProvinceDropdown({
     super.key,
     required this.label,
     this.required = false,
+    this.fieldKey,
+    this.dataMap,
+    this.readOnly = false,
   });
 
   @override
@@ -233,6 +299,14 @@ class _ProvinceDropdownState extends State<ProvinceDropdown> {
   String? _selected;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.dataMap != null && widget.fieldKey != null) {
+      _selected = widget.dataMap![widget.fieldKey];
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,36 +315,56 @@ class _ProvinceDropdownState extends State<ProvinceDropdown> {
         RichText(
           text: TextSpan(
             text: widget.label,
-            style: const TextStyle(fontSize: 11, color: Colors.black87),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy),
             children: widget.required
                 ? const [
                     TextSpan(
                       text: ' *',
-                      style: TextStyle(color: Colors.red, fontSize: 11),
+                      style: TextStyle(color: Colors.red, fontSize: 12),
                     ),
                   ]
                 : [],
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 6),
         DropdownButtonFormField<String>(
           value: _selected,
           isDense: true,
           isExpanded: true,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             isDense: true,
-            contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-            border: UnderlineInputBorder(),
+            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.teal, width: 1.5),
+            ),
+            filled: true,
+            fillColor: Colors.white,
           ),
-          hint: const Text(
+          hint: Text(
             'प्रदेश छान्नुहोस्',
-            style: TextStyle(fontSize: 11, color: Colors.grey),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           ),
-          style: const TextStyle(fontSize: 12, color: Colors.black87),
+          style: const TextStyle(fontSize: 13, color: AppColors.navy),
           items: kNepalProvinces
               .map((p) => DropdownMenuItem(value: p, child: Text(p)))
               .toList(),
-          onChanged: (v) => setState(() => _selected = v),
+            onChanged: widget.readOnly
+                ? null
+                : (v) {
+                    setState(() => _selected = v);
+                    if (widget.dataMap != null && widget.fieldKey != null) {
+                      widget.dataMap![widget.fieldKey!] = v;
+                    }
+                  },
           validator: widget.required
               ? (v) => (v == null || v.isEmpty) ? 'आवश्यक छ' : null
               : null,
@@ -285,26 +379,55 @@ class _ProvinceDropdownState extends State<ProvinceDropdown> {
 // ─────────────────────────────────────────────────────────────────────────────
 class DateEntryWidget extends StatelessWidget {
   final String label;
+  final String? fieldKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
 
-  const DateEntryWidget({super.key, required this.label});
+  const DateEntryWidget({
+    super.key,
+    required this.label,
+    this.fieldKey,
+    this.dataMap,
+    this.readOnly = false,
+  });
 
-  Widget _box(String hint) {
+  Widget _box(String hint, String suffix) {
     return SizedBox(
-      width: hint == 'YYYY' ? 52 : 32,
+      width: hint == 'YYYY' ? 70 : 50,
       child: TextFormField(
+        readOnly: readOnly,
+        initialValue: (dataMap != null && fieldKey != null) ? dataMap!['${fieldKey}_$suffix'] : null,
+        onChanged: (val) {
+          if (dataMap != null && fieldKey != null) {
+            dataMap!['${fieldKey}_$suffix'] = val;
+          }
+        },
         textAlign: TextAlign.center,
         keyboardType: TextInputType.number,
         maxLength: hint == 'YYYY' ? 4 : 2,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(fontSize: 10, color: Colors.grey),
+          hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           isDense: true,
           counterText: '',
           contentPadding:
-              const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-          border: const OutlineInputBorder(),
+              const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: AppColors.teal, width: 1.5),
+          ),
+          filled: true,
+          fillColor: Colors.white,
         ),
-        style: const TextStyle(fontSize: 12),
+        style: const TextStyle(fontSize: 13, color: AppColors.navy),
       ),
     );
   }
@@ -313,16 +436,17 @@ class DateEntryWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 4,
+      spacing: 8,
+      runSpacing: 8,
       children: [
         if (label.isNotEmpty)
           Text(label,
-              style: const TextStyle(fontSize: 11, color: Colors.black87)),
-        _box('DD'),
-        const Text('/', style: TextStyle(fontSize: 12)),
-        _box('MM'),
-        const Text('/', style: TextStyle(fontSize: 12)),
-        _box('YYYY'),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy)),
+        _box('DD', 'dd'),
+        const Text('/', style: TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold)),
+        _box('MM', 'mm'),
+        const Text('/', style: TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold)),
+        _box('YYYY', 'yyyy'),
       ],
     );
   }
@@ -333,8 +457,17 @@ class DateEntryWidget extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class AddressBlock extends StatelessWidget {
   final String title;
+  final String? prefixKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
 
-  const AddressBlock({super.key, required this.title});
+  const AddressBlock({
+    super.key,
+    required this.title,
+    this.prefixKey,
+    this.dataMap,
+    this.readOnly = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -344,30 +477,27 @@ class AddressBlock extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: kDarkBlue,
+            color: AppColors.navy,
           ),
         ),
-        const SizedBox(height: 8),
-        const ProvinceDropdown(label: 'प्रदेश:'),
-        const SizedBox(height: 8),
-        const DistrictDropdown(label: 'जिल्ला:', width: double.infinity),
-        const SizedBox(height: 8),
-        const LabeledField(
-            label: 'गाउँपालिका/नगरपालिका:', width: double.infinity),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
+        ProvinceDropdown(label: 'प्रदेश:', fieldKey: prefixKey != null ? '${prefixKey}_province' : null, dataMap: dataMap, readOnly: readOnly),
+        const SizedBox(height: 12),
+        DistrictDropdown(label: 'जिल्ला:', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_district' : null, dataMap: dataMap, readOnly: readOnly),
+        const SizedBox(height: 12),
+        LabeledField(label: 'गाउँपालिका/नगरपालिका:', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_municipality' : null, dataMap: dataMap, readOnly: readOnly),
+        const SizedBox(height: 12),
         Row(
           children: [
-            const Expanded(
-                child: LabeledField(label: 'वडा नं:', width: double.infinity)),
-            const SizedBox(width: 8),
-            const Expanded(
-                child: LabeledField(label: 'टोल:', width: double.infinity)),
+            Expanded(child: LabeledField(label: 'वडा नं:', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_ward' : null, dataMap: dataMap, readOnly: readOnly)),
+            const SizedBox(width: 16),
+            Expanded(child: LabeledField(label: 'टोल (ऐच्छिक):', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_tole' : null, dataMap: dataMap, readOnly: readOnly)),
           ],
         ),
-        const SizedBox(height: 8),
-        const LabeledField(label: 'घर नं:', width: double.infinity),
+        const SizedBox(height: 12),
+        LabeledField(label: 'घर नं (ऐच्छिक):', width: double.infinity, fieldKey: prefixKey != null ? '${prefixKey}_house' : null, dataMap: dataMap, readOnly: readOnly),
       ],
     );
   }
@@ -379,20 +509,46 @@ class AddressBlock extends StatelessWidget {
 class NameRow extends StatelessWidget {
   final String nepLabel;
   final String engLabel;
+  final String? nepKey;
+  final String? engKey;
+  final Map<String, dynamic>? dataMap;
+  final bool readOnly;
 
-  const NameRow({super.key, required this.nepLabel, required this.engLabel});
+  const NameRow({
+    super.key,
+    required this.nepLabel,
+    required this.engLabel,
+    this.nepKey,
+    this.engKey,
+    this.dataMap,
+    this.readOnly = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 6,
-        children: [
-          LabeledField(label: '$nepLabel (नेपाली):', width: 140),
-          LabeledField(label: '$engLabel (English):', width: 140),
-        ],
+      padding: const EdgeInsets.only(bottom: 12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 400;
+          if (isWide) {
+            return Row(
+              children: [
+                Expanded(child: LabeledField(label: '$nepLabel (नेपाली):', width: double.infinity, fieldKey: nepKey, dataMap: dataMap, readOnly: readOnly)),
+                const SizedBox(width: 16),
+                Expanded(child: LabeledField(label: '$engLabel (English):', width: double.infinity, fieldKey: engKey, dataMap: dataMap, readOnly: readOnly)),
+              ],
+            );
+          } else {
+            return Column(
+              children: [
+                LabeledField(label: '$nepLabel (नेपाली):', width: double.infinity, fieldKey: nepKey, dataMap: dataMap, readOnly: readOnly),
+                const SizedBox(height: 12),
+                LabeledField(label: '$engLabel (English):', width: double.infinity, fieldKey: engKey, dataMap: dataMap, readOnly: readOnly),
+              ],
+            );
+          }
+        },
       ),
     );
   }
@@ -453,6 +609,12 @@ class DocUploadTileState extends State<DocUploadTile> {
           uploadedFileName = file.name;
           uploadedFileSize = file.size;
         });
+      } else {
+         // for simulation
+         setState(() {
+          uploadedFileName = 'document_${DateTime.now().millisecondsSinceEpoch}.pdf';
+          uploadedFileSize = 1024 * 500;
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -498,16 +660,16 @@ class DocUploadTileState extends State<DocUploadTile> {
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: uploaded
-              ? Colors.green.shade300
+              ? AppColors.teal
               : widget.required
                   ? Colors.red.shade200
-                  : Colors.grey.shade200,
+                  : Colors.grey.shade300,
           width: 1.5,
         ),
       ),
@@ -516,25 +678,25 @@ class DocUploadTileState extends State<DocUploadTile> {
           ListTile(
             dense: true,
             contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             leading: Icon(
               uploaded ? _fileTypeIcon(uploadedFileName!) : widget.icon,
-              color: uploaded ? Colors.green : kDarkBlue,
-              size: 22,
+              color: uploaded ? AppColors.teal : AppColors.navy,
+              size: 26,
             ),
             title: Text(
               widget.title,
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: uploaded ? Colors.green.shade700 : kDarkBlue,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: uploaded ? AppColors.teal : AppColors.navy,
               ),
             ),
             subtitle: uploaded
                 ? Text(
                     _truncateFileName(uploadedFileName!),
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 11,
                       color: Colors.green.shade600,
                       fontStyle: FontStyle.italic,
                     ),
@@ -542,7 +704,7 @@ class DocUploadTileState extends State<DocUploadTile> {
                 : Text(
                     widget.required ? 'अनिवार्य' : 'ऐच्छिक',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 11,
                       color: widget.required
                           ? Colors.red.shade400
                           : Colors.grey,
@@ -550,30 +712,31 @@ class DocUploadTileState extends State<DocUploadTile> {
                   ),
             trailing: _loading
                 ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.teal),
                   )
                 : uploaded
                     ? GestureDetector(
-                        onTap: _pickFile,
+                        onTap: clear,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 5),
+                              horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.green.shade600,
-                            borderRadius: BorderRadius.circular(6),
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.red.shade200)
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: const [
-                              Icon(Icons.refresh,
-                                  color: Colors.white, size: 12),
+                              Icon(Icons.close,
+                                  color: Colors.red, size: 14),
                               SizedBox(width: 4),
                               Text(
-                                'फेरि अपलोड',
+                                'हटाउनुहोस्',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: Colors.red,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -586,23 +749,23 @@ class DocUploadTileState extends State<DocUploadTile> {
                         onTap: _pickFile,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: kDarkBlue,
-                            borderRadius: BorderRadius.circular(6),
+                            color: AppColors.navy,
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: const [
                               Icon(Icons.upload_file,
-                                  color: Colors.white, size: 13),
-                              SizedBox(width: 4),
+                                  color: Colors.white, size: 14),
+                              SizedBox(width: 6),
                               Text(
                                 'अपलोड',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
@@ -616,9 +779,9 @@ class DocUploadTileState extends State<DocUploadTile> {
             Container(
               width: double.infinity,
               padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
+                color: AppColors.teal.withOpacity(0.1),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(10),
                   bottomRight: Radius.circular(10),
@@ -627,15 +790,15 @@ class DocUploadTileState extends State<DocUploadTile> {
               child: Row(
                 children: [
                   const Icon(Icons.check_circle,
-                      color: Colors.green, size: 13),
-                  const SizedBox(width: 6),
+                      color: AppColors.teal, size: 16),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       uploadedFileName!,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.green.shade800,
-                        fontWeight: FontWeight.w500,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.teal,
+                        fontWeight: FontWeight.bold,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -643,8 +806,8 @@ class DocUploadTileState extends State<DocUploadTile> {
                   if (uploadedFileSize != null)
                     Text(
                       _formatSize(uploadedFileSize!),
-                      style: TextStyle(
-                          fontSize: 10, color: Colors.green.shade600),
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.teal),
                     ),
                 ],
               ),
@@ -678,37 +841,37 @@ class _SignaturePadState extends State<SignaturePad> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 180,
-          height: 70,
+          width: 220,
+          height: 80,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
-            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: Colors.grey.shade300, width: 1.5),
+            borderRadius: BorderRadius.circular(8),
             color: Colors.white,
           ),
-          child: GestureDetector(
-            onPanUpdate: (d) =>
-                setState(() => _points.add(d.localPosition)),
-            onPanEnd: (_) => setState(() => _points.add(null)),
+          child: Listener(
+            onPointerDown: (e) => setState(() => _points.add(e.localPosition)),
+            onPointerMove: (e) => setState(() => _points.add(e.localPosition)),
+            onPointerUp: (_) => setState(() => _points.add(null)),
             child: CustomPaint(
               painter: _SigPainter(_points),
               child: _hasSignature
-                  ? const SizedBox()
-                  : const Center(
+                  ? const SizedBox.expand()
+                  : Center(
                       child: Text(
                         'यहाँ दस्तखत गर्नुहोस्',
-                        style:
-                            TextStyle(fontSize: 10, color: Colors.grey),
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                       ),
                     ),
             ),
           ),
         ),
         if (_hasSignature)
-          TextButton(
+          TextButton.icon(
             onPressed: clear,
-            child: const Text(
+            icon: const Icon(Icons.clear, size: 14, color: Colors.red),
+            label: const Text(
               'मेटाउनुहोस्',
-              style: TextStyle(fontSize: 11, color: Colors.red),
+              style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold),
             ),
           ),
       ],
@@ -724,8 +887,8 @@ class _SigPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = kDarkBlue
-      ..strokeWidth = 2
+      ..color = AppColors.navy
+      ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;
     for (int i = 0; i < points.length - 1; i++) {
       if (points[i] != null && points[i + 1] != null) {
@@ -778,22 +941,23 @@ class _FingerprintBoxState extends State<FingerprintBox> {
       child: Column(
         children: [
           Container(
-            width: 70,
-            height: 26,
+            width: 80,
+            height: 30,
             alignment: Alignment.center,
             decoration:
-                BoxDecoration(border: Border.all(color: Colors.grey)),
+                BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: const BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8))),
             child: Text(widget.label,
-                style: const TextStyle(fontSize: 11)),
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
           ),
           Container(
-            width: 70,
-            height: 70,
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
               border: Border.all(
-                  color: _scanned ? Colors.green : Colors.grey),
+                  color: _scanned ? AppColors.teal : Colors.grey.shade300),
+              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8)),
               color: _scanned
-                  ? Colors.green.shade50
+                  ? AppColors.teal.withOpacity(0.1)
                   : Colors.grey.shade50,
             ),
             child: _scanning
@@ -802,21 +966,22 @@ class _FingerprintBoxState extends State<FingerprintBox> {
                       width: 24,
                       height: 24,
                       child:
-                          CircularProgressIndicator(strokeWidth: 2),
+                          CircularProgressIndicator(strokeWidth: 2, color: AppColors.teal),
                     ),
                   )
                 : _scanned
                     ? const Icon(Icons.fingerprint,
-                        color: Colors.green, size: 36)
+                        color: AppColors.teal, size: 40)
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
+                        children: [
                           Icon(Icons.fingerprint,
-                              color: Colors.grey, size: 28),
+                              color: Colors.grey.shade400, size: 32),
+                          const SizedBox(height: 4),
                           Text(
                             'थिच्नुहोस्',
                             style: TextStyle(
-                                fontSize: 9, color: Colors.grey),
+                                fontSize: 10, color: Colors.grey.shade500),
                           ),
                         ],
                       ),

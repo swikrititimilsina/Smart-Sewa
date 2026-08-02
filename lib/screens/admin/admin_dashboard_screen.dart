@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../utils/app_colors.dart';
 import '../../models/user_model.dart';
 import '../../widgets/service_card_widget.dart';
 import '../login_screen.dart';
+import 'application_review_screen.dart';
+import 'post_notice_screen.dart';
+import 'view_reports_screen.dart';
+import '../settings_screen.dart';
 
 // ── Admin menu sheet ──
 class _AdminMenuSheet extends StatelessWidget {
@@ -27,7 +32,20 @@ class _AdminMenuSheet extends StatelessWidget {
             leading: const Icon(Icons.shield_outlined, color: AppColors.navy),
             title: const Text('Settings & Privacy',
                 style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.navy)),
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+            },
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          ListTile(
+            leading: const Icon(Icons.report_problem_outlined, color: AppColors.navy),
+            title: const Text('Citizen Reports',
+                style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.navy)),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ViewReportsScreen()));
+            },
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           ListTile(
@@ -75,13 +93,17 @@ class AdminHomeScreen extends StatelessWidget {
                 style: TextStyle(color: AppColors.teal, fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               UserSession.loggedInName = '';
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false,
-              );
+              UserSession.loggedInPhone = '';
+              await FirebaseAuth.instance.signOut();
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -182,11 +204,31 @@ class AdminHomeScreen extends StatelessWidget {
                     crossAxisCount: 2,
                     crossAxisSpacing: 14,
                     mainAxisSpacing: 14,
-                    children: const [
-                      ServiceTile(icon: Icons.folder_open_outlined,          label: 'Review\nApplications'),
-                      ServiceTile(icon: Icons.people_outline,                label: 'Manage\nCitizens'),
-                      ServiceTile(icon: Icons.notifications_active_outlined, label: 'Send\nNotice'),
-                      ServiceTile(icon: Icons.storage_rounded,               label: 'Database'),
+                    children: [
+                      ServiceTile(
+                        icon: Icons.folder_open_outlined,
+                        label: 'Review\nApplications',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ApplicationReviewScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      ServiceTile(
+                        icon: Icons.notifications_active_outlined,
+                        label: 'Send\nNotice',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PostNoticeScreen(),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),

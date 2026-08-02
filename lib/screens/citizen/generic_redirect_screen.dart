@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../utils/app_colors.dart';
 import 'passport_form_screen.dart';
 import 'birth_reg_form_screen.dart' show BirthFormScreen;
-import 'nid_form_screen.dart'; // From sample
+import 'nid_form_screen.dart';
+import '../../widgets/base64_upload_widget.dart';
+import '../../services/form_draft_service.dart';
 
 enum ServiceType {
   nid('National Identity Card (NID)', 'राष्ट्रिय परिचयपत्र', Icons.credit_card_rounded),
@@ -16,10 +20,26 @@ enum ServiceType {
   const ServiceType(this.titleEn, this.titleNp, this.icon);
 }
 
-class GenericRedirectScreen extends StatelessWidget {
+class GenericRedirectScreen extends StatefulWidget {
   final ServiceType serviceType;
 
   const GenericRedirectScreen({super.key, required this.serviceType});
+
+  @override
+  State<GenericRedirectScreen> createState() => _GenericRedirectScreenState();
+}
+
+class _GenericRedirectScreenState extends State<GenericRedirectScreen> {
+  String? _attachedDocumentBase64;
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = FormDraftService.getDraft('redirect_${widget.serviceType.name}');
+    if (draft != null) {
+      _attachedDocumentBase64 = draft['doc'];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +48,7 @@ class GenericRedirectScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColors.navy,
         title: Text(
-          '${serviceType.titleNp} / ${serviceType.titleEn}',
+          '${widget.serviceType.titleNp} / ${widget.serviceType.titleEn}',
           style: const TextStyle(color: Colors.white, fontSize: 16),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -60,7 +80,7 @@ class GenericRedirectScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
-                      serviceType.icon,
+                      widget.serviceType.icon,
                       color: Colors.white,
                       size: 28,
                     ),
@@ -71,7 +91,7 @@ class GenericRedirectScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          serviceType.titleNp,
+                          widget.serviceType.titleNp,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
@@ -80,7 +100,7 @@ class GenericRedirectScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          serviceType.titleEn,
+                          widget.serviceType.titleEn,
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 11,
@@ -115,20 +135,43 @@ class GenericRedirectScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: _UploadDocTile(
+              child: Base64UploadWidget(
                 icon: Icons.badge_outlined,
-                title: serviceType.titleNp,
-                subtitle: serviceType.titleEn,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('📎 ${serviceType.titleEn} upload — coming soon'),
-                      backgroundColor: AppColors.navy,
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
+                title: widget.serviceType.titleNp,
+                subtitle: widget.serviceType.titleEn,
+                initialBase64: _attachedDocumentBase64,
+                onImageChanged: (base64Str) async {
+                  setState(() {
+                    _attachedDocumentBase64 = base64Str;
+                  });
+                  if (base64Str != null) {
+                    FormDraftService.saveDraft('redirect_${widget.serviceType.name}', {'doc': base64Str});
+                    
+                    final user = FirebaseAuth.instance.currentUser;
+                    if (user != null) {
+                      try {
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(user.uid)
+                            .collection('documents')
+                            .add({
+                          'title': '${widget.serviceType.titleEn} Existing Document',
+                          'base64': base64Str,
+                          'uploadedAt': FieldValue.serverTimestamp(),
+                        });
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Document saved to My Documents'), backgroundColor: Colors.green),
+                          );
+                        }
+                      } catch (e) {
+                        debugPrint('Error saving doc: $e');
+                      }
+                    }
+                  } else {
+                    FormDraftService.clearDraft('redirect_${widget.serviceType.name}');
+                  }
                 },
-                isLast: true,
               ),
             ),
 
@@ -156,24 +199,24 @@ class GenericRedirectScreen extends StatelessWidget {
               ),
               child: _ApplyTile(
                 icon: Icons.article_outlined,
-                title: serviceType.titleNp,
-                subtitle: serviceType.titleEn,
+                title: widget.serviceType.titleNp,
+                subtitle: widget.serviceType.titleEn,
                 isLast: true,
                 onTap: () {
-                  if (serviceType == ServiceType.nid) {
+                  if (widget.serviceType == ServiceType.nid) {
                     Navigator.push(
                       context,
                       PageRouteBuilder(
-                        pageBuilder: (_, __, ___) => const NIDFormScreen(),
+                        pageBuilder: (_, __, ___) => NIDFormScreen(attachedDocumentBase64: _attachedDocumentBase64),
                         transitionDuration: Duration.zero,
                         reverseTransitionDuration: Duration.zero,
                       ),
                     );
-                  } else if (serviceType == ServiceType.passport) {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const PassportFormScreen()));
-                  } else if (serviceType == ServiceType.birthReg) {
+                  } else if (widget.serviceType == ServiceType.passport) {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => PassportFormScreen(attachedDocumentBase64: _attachedDocumentBase64)));
+                  } else if (widget.serviceType == ServiceType.birthReg) {
                     Navigator.push(context, PageRouteBuilder(
-                      pageBuilder: (_, __, ___) => const BirthFormScreen(),
+                      pageBuilder: (_, __, ___) => BirthFormScreen(attachedDocumentBase64: _attachedDocumentBase64),
                       transitionDuration: Duration.zero,
                       reverseTransitionDuration: Duration.zero,
                     ));
@@ -233,102 +276,6 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ── Upload tile widget ─────────────────────────────────────────────────────
-class _UploadDocTile extends StatefulWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  final bool isLast;
-
-  const _UploadDocTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.isLast = false,
-  });
-
-  @override
-  State<_UploadDocTile> createState() => _UploadDocTileState();
-}
-
-class _UploadDocTileState extends State<_UploadDocTile> {
-  bool _uploaded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        setState(() => _uploaded = !_uploaded);
-        if (!_uploaded) widget.onTap();
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.navy.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(widget.icon, color: AppColors.navy, size: 18),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.navy,
-                    ),
-                  ),
-                  Text(
-                    widget.subtitle,
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              child: _uploaded
-                  ? const Icon(Icons.check_circle,
-                      key: ValueKey('done'), color: AppColors.teal, size: 22)
-                  : Container(
-                      key: const ValueKey('upload'),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.navy),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.upload, size: 12, color: AppColors.navy),
-                          SizedBox(width: 4),
-                          Text('Upload',
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.navy,
-                                  fontWeight: FontWeight.w600)),
-                        ],
-                      ),
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ── Apply tile widget ──────────────────────────────────────────────────────
 class _ApplyTile extends StatelessWidget {

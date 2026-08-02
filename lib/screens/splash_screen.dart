@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/app_colors.dart';
 import '../widgets/logo_badge_widget.dart';
 import '../widgets/arc_spinner_widget.dart';
 import 'login_screen.dart';
+import '../models/user_model.dart';
+import 'admin/admin_dashboard_screen.dart';
+import 'citizen/citizen_dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -36,17 +41,58 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _logoController.forward();
     Future.delayed(const Duration(milliseconds: 500), () => _textController.forward());
     Future.delayed(const Duration(milliseconds: 3200), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const LoginScreen(),
-            transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
-            transitionDuration: const Duration(milliseconds: 600),
-          ),
-        );
-      }
+      _checkAuthAndRoute();
     });
+  }
+
+  Future<void> _checkAuthAndRoute() async {
+    try {
+      // Wait for Firebase Auth to restore session — currentUser is null briefly on cold start
+      final user = await FirebaseAuth.instance.authStateChanges().first;
+
+      if (user == null) {
+        _routeTo(const LoginScreen());
+        return;
+      }
+
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final role = data['role'] ?? 'citizen';
+        UserSession.loggedInName = data['name'] ?? user.email?.split('@')[0] ?? '';
+        UserSession.loggedInPhone = data['phone'] ?? '';
+        UserSession.loggedInEmail = user.email ?? '';
+        UserSession.loggedInProfileImageBase64 = data['profileImageBase64'] ?? '';
+
+        if (role == 'admin') {
+          _routeTo(const AdminHomeScreen());
+        } else {
+          _routeTo(const CitizenHomeScreen());
+        }
+      } else {
+        // Fallback if no Firestore doc
+        UserSession.loggedInName = user.displayName ?? user.email?.split('@')[0] ?? '';
+        UserSession.loggedInPhone = '';
+        UserSession.loggedInEmail = user.email ?? '';
+        UserSession.loggedInProfileImageBase64 = '';
+        bool isAdmin = (user.email?.toLowerCase() == 'admin@smartsewa.com');
+        _routeTo(isAdmin ? const AdminHomeScreen() : const CitizenHomeScreen());
+      }
+    } catch (e) {
+      _routeTo(const LoginScreen());
+    }
+  }
+
+  void _routeTo(Widget screen) {
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => screen,
+        transitionsBuilder: (_, anim, __, child) => FadeTransition(opacity: anim, child: child),
+        transitionDuration: const Duration(milliseconds: 600),
+      ),
+    );
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smartsewa/widgets/nid_widgets.dart';
+import 'package:smartsewa/utils/app_colors.dart';
 
 class ParentSection extends StatefulWidget {
   final String foreignLabel;
@@ -15,36 +16,36 @@ class _ParentSectionState extends State<ParentSection> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          NameRow(nepLabel: 'पहिलो नाम', engLabel: 'First Name'),
-          NameRow(nepLabel: 'बीचको नाम', engLabel: 'Middle Name'),
-          NameRow(nepLabel: 'थर', engLabel: 'Last Name'),
-          const SizedBox(height: 6),
+          const NameRow(nepLabel: 'पहिलो नाम', engLabel: 'First Name'),
+          const NameRow(nepLabel: 'बीचको नाम', engLabel: 'Middle Name'),
+          const NameRow(nepLabel: 'थर', engLabel: 'Last Name'),
+          const SizedBox(height: 8),
           Row(
             children: [
               Checkbox(
                 value: _isForeign,
                 onChanged: (v) => setState(() => _isForeign = v ?? false),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                activeColor: kDarkBlue,
+                activeColor: AppColors.teal,
               ),
               Expanded(
                 child: Text(
                   widget.foreignLabel,
-                  style: const TextStyle(fontSize: 11),
+                  style: const TextStyle(fontSize: 12, color: AppColors.navy),
                 ),
               ),
             ],
           ),
           if (_isForeign)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
               child: LabeledField(
                 label: 'मुलुकको नाम (Country Name):',
-                width: 220,
+                width: 260,
               ),
             ),
         ],
