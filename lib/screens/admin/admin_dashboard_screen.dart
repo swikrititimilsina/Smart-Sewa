@@ -6,6 +6,8 @@ import '../../widgets/service_card_widget.dart';
 import '../login_screen.dart';
 import 'application_review_screen.dart';
 import 'post_notice_screen.dart';
+import 'view_reports_screen.dart';
+import '../settings_screen.dart';
 
 // ── Admin menu sheet ──
 class _AdminMenuSheet extends StatelessWidget {
@@ -30,7 +32,20 @@ class _AdminMenuSheet extends StatelessWidget {
             leading: const Icon(Icons.shield_outlined, color: AppColors.navy),
             title: const Text('Settings & Privacy',
                 style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.navy)),
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+            },
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          ListTile(
+            leading: const Icon(Icons.report_problem_outlined, color: AppColors.navy),
+            title: const Text('Citizen Reports',
+                style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.navy)),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ViewReportsScreen()));
+            },
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           ListTile(

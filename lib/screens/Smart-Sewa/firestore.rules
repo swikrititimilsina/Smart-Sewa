@@ -50,5 +50,13 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow delete: if isAdmin() || (isAuthenticated() && isOwner(resource.data.citizenId));
     }
+
+    // ── Problem Reports ──
+    match /problem_reports/{reportId} {
+      allow create: if isAuthenticated();
+      allow read:   if isAuthenticated() && (isAdmin() || isOwner(resource.data.citizenId));
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
   }
 }

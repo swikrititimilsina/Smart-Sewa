@@ -24,6 +24,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   List<Map<String, dynamic>> _generalNotices = [];
   List<Map<String, dynamic>> _userNotices = [];
 
+  bool _isSelectionMode = false;
+  Set<String> _selectedNotices = {};
+
+  Future<void> _deleteSelected() async {
+    // Citizens can only delete personal (user) notifications
+    final deletable = _selectedNotices.where((id) {
+      final notice = _allNotices.firstWhere((n) => n['id'] == id, orElse: () => {});
+      return notice.isNotEmpty && notice['isPersonal'] == true;
+    }).toList();
+
+    if (deletable.isEmpty) {
+      setState(() { _isSelectionMode = false; _selectedNotices.clear(); });
+      return;
+    }
+
+    final batch = FirebaseFirestore.instance.batch();
+    for (final id in deletable) {
+      batch.delete(FirebaseFirestore.instance.collection('user_notifications').doc(id));
+    }
+    try {
+      await batch.commit();
+      setState(() { _isSelectionMode = false; _selectedNotices.clear(); });
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notifications deleted')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to delete notifications.')));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -75,8 +103,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void _mergeAndSortNotices() {
     final combined = [..._generalNotices, ..._userNotices];
     combined.sort((a, b) {
-      final tsA = a['postedAt'] as Timestamp?;
-      final tsB = b['postedAt'] as Timestamp?;
+      final tsA = (a['postedAt'] ?? a['timestamp']) as Timestamp?;
+      final tsB = (b['postedAt'] ?? b['timestamp']) as Timestamp?;
       if (tsA == null && tsB == null) return 0;
       if (tsA == null) return 1;
       if (tsB == null) return -1;
@@ -180,21 +208,63 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 24),
-        const Row(
+        Row(
           children: [
             Expanded(
               child: Text(
-                'Notifications',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.navy),
+                _isSelectionMode ? '${_selectedNotices.length} Selected' : 'Notifications',
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.navy),
               ),
             ),
+            if (_isSelectionMode) ...[
+              IconButton(
+                icon: const Icon(Icons.checklist, color: AppColors.teal),
+                onPressed: () {
+                  setState(() {
+                    _selectedNotices.addAll(_allNotices.map((n) => n['id'] as String));
+                  });
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () {
+                  if (_selectedNotices.isEmpty) return;
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Delete Selected'),
+                      content: Text('Are you sure you want to delete ${_selectedNotices.length} notifications?'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _deleteSelected();
+                          },
+                          child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: AppColors.navy),
+                onPressed: () => setState(() {
+                  _isSelectionMode = false;
+                  _selectedNotices.clear();
+                }),
+              ),
+            ],
           ],
         ),
-        const SizedBox(height: 4),
-        const Text(
-          'General announcements and personal updates',
-          style: TextStyle(fontSize: 13, color: AppColors.teal, fontWeight: FontWeight.w500),
-        ),
+        if (!_isSelectionMode) ...[
+          const SizedBox(height: 4),
+          const Text(
+            'General announcements and personal updates',
+            style: TextStyle(fontSize: 13, color: AppColors.teal, fontWeight: FontWeight.w500),
+          ),
+        ],
         const SizedBox(height: 20),
         Expanded(
           child: _isLoading
@@ -225,48 +295,51 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             final message = data['message'] ?? '';
                             final isPersonal = data['isPersonal'] ?? false;
 
+                            final isSelected = _selectedNotices.contains(data['id']);
+
                             return GestureDetector(
-                              onTap: () => _showNoticeDetail(context, title, message, date, isPersonal),
+                              onTap: () {
+                                if (_isSelectionMode) {
+                                  setState(() {
+                                    if (isSelected) {
+                                      _selectedNotices.remove(data['id']);
+                                      if (_selectedNotices.isEmpty) _isSelectionMode = false;
+                                    } else {
+                                      _selectedNotices.add(data['id']);
+                                    }
+                                  });
+                                } else {
+                                  _showNoticeDetail(context, title, message, date, isPersonal);
+                                }
+                              },
                               onLongPress: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (ctx) => AlertDialog(
-                                    title: const Text('Delete Notification'),
-                                    content: const Text('Are you sure you want to delete this notification?'),
-                                    actions: [
-                                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-                                      TextButton(
-                                        onPressed: () async {
-                                          Navigator.pop(ctx);
-                                          try {
-                                            await FirebaseFirestore.instance
-                                                .collection(isPersonal ? 'user_notifications' : 'general_notices')
-                                                .doc(data['id'])
-                                                .delete();
-                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification deleted')));
-                                          } catch (e) {
-                                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: Not permitted to delete this notification.')));
-                                          }
-                                        },
-                                        child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                                      ),
-                                    ],
-                                  ),
-                                );
+                                // Only personal notifications can be deleted by citizen
+                                if (!_isSelectionMode && isPersonal) {
+                                  setState(() {
+                                    _isSelectionMode = true;
+                                    _selectedNotices.add(data['id']);
+                                  });
+                                }
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                                 decoration: BoxDecoration(
-                                  color: isPersonal ? Colors.blue.withOpacity(0.06) : AppColors.teal.withOpacity(0.06),
+                                  color: isSelected ? AppColors.navy.withOpacity(0.05) : (isPersonal ? Colors.blue.withOpacity(0.06) : AppColors.teal.withOpacity(0.06)),
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: isPersonal ? Colors.blue.withOpacity(0.3) : AppColors.teal.withOpacity(0.3), width: 1),
+                                  border: Border.all(
+                                    color: isSelected ? AppColors.navy : (isPersonal ? Colors.blue.withOpacity(0.3) : AppColors.teal.withOpacity(0.3)),
+                                    width: isSelected ? 2.0 : 1.0,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(color: AppColors.navy.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 3)),
                                   ],
                                 ),
-                                child: Row(
+                               child: Row(
                                   children: [
-                                    Icon(isPersonal ? Icons.person_outline : Icons.campaign_outlined, color: isPersonal ? Colors.blue : AppColors.navy, size: 28),
+                                    if (isSelected)
+                                      const Icon(Icons.check_circle, color: AppColors.navy, size: 22)
+                                    else
+                                      Icon(isPersonal ? Icons.person_outline : Icons.campaign_outlined, color: isPersonal ? Colors.blue : AppColors.navy, size: 28),
                                     const SizedBox(width: 14),
                                     Expanded(
                                       child: Column(
@@ -278,7 +351,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                         ],
                                       ),
                                     ),
-                                    const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.teal, size: 14),
+                                    if (_isSelectionMode && !isPersonal)
+                                      Icon(Icons.lock_outline, color: Colors.grey.shade400, size: 16)
+                                    else
+                                      const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.teal, size: 14),
                                   ],
                                 ),
                               ),

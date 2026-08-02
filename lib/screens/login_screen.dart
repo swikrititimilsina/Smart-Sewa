@@ -8,6 +8,7 @@ import 'citizen/citizen_dashboard_screen.dart';
 import 'admin/admin_dashboard_screen.dart';
 import 'auth/forgot_password_screen.dart';
 import 'auth/register_screen.dart';
+import '../services/biometric_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -38,6 +39,27 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     _cardOpacity = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _cardController, curve: Curves.easeOut));
     _cardSlide   = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
         .animate(CurvedAnimation(parent: _cardController, curve: Curves.easeOut));
+  }
+
+  Future<void> _checkBiometricLogin() async {
+    // Email must be typed first — biometric lookup is keyed per email
+    final typedEmail = _emailController.text.trim();
+    if (typedEmail.isEmpty) return;
+
+    // Check if THIS specific email (citizen or admin) has biometric enabled
+    final isEnabled = await BiometricService.isBiometricEnabled(typedEmail);
+    if (!isEnabled) return;
+
+    // Load credentials saved for this specific email
+    final creds = await BiometricService.getCredentials(typedEmail);
+    if (creds == null || creds['email']!.isEmpty) return;
+
+    // Trigger fingerprint/face scanner
+    final success = await BiometricService.authenticate();
+    if (success && mounted) {
+      _passwordController.text = creds['password']!;
+      _handleLogin();
+    }
   }
 
   @override
@@ -230,6 +252,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           hint: 'Enter Password',
           controller: _passwordController,
           obscure: _obscurePassword,
+          onTap: _checkBiometricLogin,
           suffix: IconButton(
             icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                 color: AppColors.navy.withOpacity(0.5), size: 20),
@@ -319,6 +342,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     bool obscure = false,
     Widget? suffix,
     TextInputType keyboardType = TextInputType.text,
+    VoidCallback? onTap,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -330,6 +354,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         controller: controller,
         obscureText: obscure,
         keyboardType: keyboardType,
+        onTap: onTap,
         style: const TextStyle(fontSize: 14, color: AppColors.navy),
         decoration: InputDecoration(
           prefixIcon: Icon(icon, color: AppColors.navy.withOpacity(0.5), size: 20),

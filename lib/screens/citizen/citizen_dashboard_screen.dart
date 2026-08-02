@@ -12,6 +12,9 @@ import 'notifications_screen.dart';
 import 'chat_screen.dart';
 import 'citizenship_redirect_screen.dart';
 import 'generic_redirect_screen.dart';
+import '../settings_screen.dart';
+import 'report_problem_screen.dart';
+import 'help_support_screen.dart';
 
 enum _ServiceState { nid, citizenship, birthReg, passport, disabled }
 
@@ -20,7 +23,8 @@ class _MenuItem {
   final IconData icon;
   final String label;
   final bool isDestructive;
-  const _MenuItem({required this.icon, required this.label, this.isDestructive = false});
+  final VoidCallback? onTap;
+  const _MenuItem({required this.icon, required this.label, this.isDestructive = false, this.onTap});
 }
 
 // ── Bottom sheet widget ──
@@ -50,7 +54,7 @@ class _MenuSheet extends StatelessWidget {
                 color: item.isDestructive ? Colors.red : AppColors.navy,
               ),
             ),
-            onTap: item.isDestructive ? onLogout : () => Navigator.pop(context),
+            onTap: item.isDestructive ? onLogout : (item.onTap ?? () => Navigator.pop(context)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           )),
           const SizedBox(height: 8),
@@ -124,11 +128,20 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => _MenuSheet(
-        items: const [
-          _MenuItem(icon: Icons.shield_outlined,      label: 'Settings & Privacy'),
-          _MenuItem(icon: Icons.flag_outlined,         label: 'Report a Problem'),
-          _MenuItem(icon: Icons.help_outline_rounded,  label: 'Help & Support'),
-          _MenuItem(icon: Icons.logout_rounded,        label: 'Log Out', isDestructive: true),
+        items: [
+          _MenuItem(icon: Icons.shield_outlined, label: 'Settings & Privacy', onTap: () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+          }),
+          _MenuItem(icon: Icons.flag_outlined, label: 'Report a Problem', onTap: () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportProblemScreen()));
+          }),
+          _MenuItem(icon: Icons.help_outline_rounded, label: 'Help & Support', onTap: () {
+            Navigator.pop(context);
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen()));
+          }),
+          const _MenuItem(icon: Icons.logout_rounded, label: 'Log Out', isDestructive: true),
         ],
         onLogout: () => _confirmLogout(context),
       ),
