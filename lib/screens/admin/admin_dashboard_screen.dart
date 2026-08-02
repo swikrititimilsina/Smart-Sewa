@@ -12,7 +12,9 @@ import '../settings_screen.dart';
 // ── Admin menu sheet ──
 class _AdminMenuSheet extends StatelessWidget {
   final VoidCallback onLogout;
-  const _AdminMenuSheet({required this.onLogout});
+  final VoidCallback onSettings;
+
+  const _AdminMenuSheet({required this.onLogout, required this.onSettings});
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +34,7 @@ class _AdminMenuSheet extends StatelessWidget {
             leading: const Icon(Icons.shield_outlined, color: AppColors.navy),
             title: const Text('Settings & Privacy',
                 style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.navy)),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-            },
+            onTap: onSettings,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           ListTile(
@@ -62,17 +61,28 @@ class _AdminMenuSheet extends StatelessWidget {
   }
 }
 
-// ── Main screen ──
-class AdminHomeScreen extends StatelessWidget {
+class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
 
+  @override
+  State<AdminHomeScreen> createState() => _AdminHomeScreenState();
+}
+
+class _AdminHomeScreenState extends State<AdminHomeScreen> {
   void _showMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _AdminMenuSheet(onLogout: () => _confirmLogout(context)),
+      builder: (_) => _AdminMenuSheet(
+        onLogout: () => _confirmLogout(context),
+        onSettings: () async {
+          Navigator.pop(context);
+          await Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+          if (mounted) setState(() {});
+        },
+      ),
     );
   }
 
