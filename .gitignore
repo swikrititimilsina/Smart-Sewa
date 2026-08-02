@@ -1,83 +1,99 @@
-# Miscellaneous
+# =========================
+# Flutter / Dart
+# =========================
 *.class
 *.log
 *.pyc
 *.swp
 .DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
 
-# IntelliJ related
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+build/
+coverage/
+
+# =========================
+# IDE Files
+# =========================
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
+.vscode/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# =========================
+# Android
+# =========================
+android/local.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
+# Signing keys (NEVER COMMIT)
+*.jks
+*.keystore
+key.properties
 
-# Symbolication related
+# =========================
+# iOS
+# =========================
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/.last_build_id
+ios/Runner.xcworkspace/
+
+# Apple certificates
+*.p12
+*.mobileprovision
+
+# =========================
+# Firebase
+# =========================
+
+# Firebase app configs
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# FlutterFire generated config
+lib/firebase_options.dart
+
+# Firebase CLI
+.firebase/
+.firebaserc
+
+# Firebase Admin SDK keys
+firebase-adminsdk*.json
+service-account.json
+*service-account*.json
+
+# =========================
+# Environment & Secrets
+# =========================
+.env
+.env.*
+*.env
+
+secrets.json
+credentials.json
+config.json
+
+# =========================
+# Misc
+# =========================
+.history/
+.svn/
+.atom/
+.swiftpm/
+migrate_working_dir/
+
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
 
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-# Firebase
-android/app/google-services.json
-**/google-services.json
-
-# Flutter/Dart
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.pub-cache/
-.pub/
-build/
-
-# Android
-.gradle/
-android/.gradle/
-android/app/build/
-
-# iOS
-ios/Pods/
-ios/.symlinks/
-ios/Flutter/Flutter.framework
-ios/Flutter/Flutter.podspec
-
-# Generated files
-*.log
-*.class
-*.pyc
-*.swp
-
-# IDE
-.idea/
-*.iml
-.vscode/
-
-# OS
-.DS_Store
