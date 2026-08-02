@@ -60,7 +60,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         final data = doc.data() as Map<String, dynamic>;
         final role = data['role'] ?? 'citizen';
         UserSession.loggedInName = data['name'] ?? user.email?.split('@')[0] ?? '';
-        UserSession.loggedInPhone = user.email ?? '';
+        UserSession.loggedInPhone = data['phone'] ?? '';
+        UserSession.loggedInEmail = user.email ?? '';
+        UserSession.loggedInProfileImageBase64 = data['profileImageBase64'] ?? '';
 
         if (role == 'admin') {
           _routeTo(const AdminHomeScreen());
@@ -70,7 +72,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       } else {
         // Fallback if no Firestore doc
         UserSession.loggedInName = user.displayName ?? user.email?.split('@')[0] ?? '';
-        UserSession.loggedInPhone = user.email ?? '';
+        UserSession.loggedInPhone = '';
+        UserSession.loggedInEmail = user.email ?? '';
+        UserSession.loggedInProfileImageBase64 = '';
         bool isAdmin = (user.email?.toLowerCase() == 'admin@smartsewa.com');
         _routeTo(isAdmin ? const AdminHomeScreen() : const CitizenHomeScreen());
       }

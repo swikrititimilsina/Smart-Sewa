@@ -104,7 +104,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           final name = data['name'] ?? email.split('@')[0];
 
           UserSession.loggedInName = name;
-          UserSession.loggedInPhone = email; // Fallback
+          UserSession.loggedInPhone = data['phone'] ?? '';
+          UserSession.loggedInEmail = email;
+          UserSession.loggedInProfileImageBase64 = data['profileImageBase64'] ?? '';
 
           if (mounted) {
             if (role == 'admin') {
@@ -116,7 +118,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         } else {
           // Fallback if no Firestore doc exists (e.g. legacy account)
           UserSession.loggedInName = userCredential.user?.displayName ?? email.split('@')[0];
-          UserSession.loggedInPhone = email;
+          UserSession.loggedInPhone = '';
+          UserSession.loggedInEmail = email;
+          UserSession.loggedInProfileImageBase64 = '';
           
           bool isAdminEmail = email.toLowerCase() == 'admin@smartsewa.com';
           

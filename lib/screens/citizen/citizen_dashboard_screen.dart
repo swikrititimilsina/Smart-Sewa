@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -15,6 +16,7 @@ import 'generic_redirect_screen.dart';
 import '../settings_screen.dart';
 import 'report_problem_screen.dart';
 import 'help_support_screen.dart';
+import 'profile_screen.dart';
 
 enum _ServiceState { nid, citizenship, birthReg, passport, disabled }
 
@@ -332,37 +334,60 @@ class _HomeContent extends StatelessWidget {
         // ── Top bar ──
         Row(
           children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                border: Border.all(color: AppColors.teal, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.navy.withOpacity(0.15),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+            GestureDetector(
+              onTap: () async {
+                final updated = await Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                if (updated == true && context.mounted) {
+                  state.setState(() {}); // refresh home screen header to show new image/name
+                }
+              },
+              child: Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(color: AppColors.teal, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.navy.withOpacity(0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: UserSession.loggedInProfileImageBase64.isNotEmpty
+                      ? Image.memory(
+                          base64Decode(UserSession.loggedInProfileImageBase64),
+                          fit: BoxFit.cover,
+                        )
+                      : const Icon(Icons.person_rounded, color: AppColors.navy, size: 30),
+                ),
               ),
-              child: const Icon(Icons.person_rounded, color: AppColors.navy, size: 30),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Hi, ${UserSession.loggedInName}',
-                    style: const TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.navy),
-                  ),
-                  const Text('Welcome back!',
-                      style: TextStyle(
-                          fontSize: 11, color: AppColors.teal, fontWeight: FontWeight.w500)),
-                ],
+              child: GestureDetector(
+                onTap: () async {
+                  final updated = await Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                  if (updated == true && context.mounted) {
+                    state.setState(() {});
+                  }
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hi, ${UserSession.loggedInName}',
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.navy),
+                    ),
+                    const Text('Welcome back!',
+                        style: TextStyle(
+                            fontSize: 11, color: AppColors.teal, fontWeight: FontWeight.w500)),
+                  ],
+                ),
               ),
             ),
             Container(
