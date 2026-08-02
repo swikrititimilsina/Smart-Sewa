@@ -131,9 +131,10 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
       ),
       builder: (_) => _MenuSheet(
         items: [
-          _MenuItem(icon: Icons.shield_outlined, label: 'Settings & Privacy', onTap: () {
+          _MenuItem(icon: Icons.shield_outlined, label: 'Settings & Privacy', onTap: () async {
             Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+            await Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+            if (mounted) setState(() {});
           }),
           _MenuItem(icon: Icons.flag_outlined, label: 'Report a Problem', onTap: () {
             Navigator.pop(context);
@@ -194,7 +195,7 @@ class _CitizenHomeScreenState extends State<CitizenHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
-      const _HomeContent(),
+      _HomeContent(),
       const DocumentsScreen(),
       NotificationsScreen(onViewed: _onNotificationsViewed),
     ];
