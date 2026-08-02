@@ -731,33 +731,14 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
     );
   }
 
-  // ── SECTION B: Thumbprint + Signature ─────────────────────────────────────
+  // ── SECTION B: Digital Signature ──────────────────────────────────────────
   Widget _buildSectionB() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CitSectionHeader(
-            '  औँठाको छाप / Thumbprint & Digital Signature'),
+        CitSectionHeader('  निवेदकको डिजिटल दस्तखत / Digital Signature'),
         const SizedBox(height: 12),
-        LayoutBuilder(builder: (ctx, constraints) {
-          return constraints.maxWidth > 500
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildThumbprints(),
-                    const SizedBox(width: 32),
-                    Expanded(child: _buildDigitalSignature()),
-                  ],
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildThumbprints(),
-                    const SizedBox(height: 20),
-                    _buildDigitalSignature(),
-                  ],
-                );
-        }),
+        _buildDigitalSignature(),
       ],
     );
   }
