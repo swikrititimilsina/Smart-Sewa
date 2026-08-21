@@ -190,6 +190,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 12),
                   const Text('Tap to add/update profile photo', style: TextStyle(fontSize: 13, color: Colors.grey, fontStyle: FontStyle.italic)),
+                  if (_imageBase64 != null && _imageBase64!.isNotEmpty)
+                    TextButton.icon(
+                      onPressed: () => setState(() => _imageBase64 = null),
+                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 16),
+                      label: const Text('Remove Photo', style: TextStyle(color: Colors.red)),
+                    ),
                 ],
               ),
             ),

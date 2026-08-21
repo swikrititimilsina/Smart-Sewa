@@ -242,13 +242,16 @@ class _GenericRedirectScreenState extends State<GenericRedirectScreen> {
                     
                     final docType = (data['type'] ?? '').toString();
                     final docStatus = (data['status'] ?? '').toString();
-                    // Only block if EXACT type match AND status is Pending or Processing
-                    if (docType == serviceTypeKey &&
-                        (docStatus == 'Pending' || docStatus == 'Processing')) {
-                      isDisabled = true;
-                      disableReason =
-                          'You have already submitted this application. Check your status under My Documents → Applications.';
-                      break;
+                    if (docType == serviceTypeKey) {
+                      if (docStatus == 'Pending' || docStatus == 'Processing') {
+                        isDisabled = true;
+                        disableReason = 'You have already submitted this application. Check your status under My Documents → Applications.';
+                        break;
+                      } else if (docStatus == 'Approved' || docStatus == 'Verified') {
+                        isDisabled = true;
+                        disableReason = 'Your application has been accepted/approved. You do not need to re-apply.';
+                        break;
+                      }
                     }
                   }
                 }

@@ -209,13 +209,16 @@ class _CitizenshipRedirectScreenState extends State<CitizenshipRedirectScreen> {
                     
                     final docType = (data['type'] ?? '').toString();
                     final docStatus = (data['status'] ?? '').toString();
-                    // Only block if type is one of the citizenship types AND Pending/Processing
-                    if (citizenshipTypes.contains(docType) &&
-                        (docStatus == 'Pending' || docStatus == 'Processing')) {
-                      isDisabled = true;
-                      disableReason =
-                          'You have already submitted this application. Check your status under My Documents → Applications.';
-                      break;
+                    if (citizenshipTypes.contains(docType)) {
+                      if (docStatus == 'Pending' || docStatus == 'Processing') {
+                        isDisabled = true;
+                        disableReason = 'You have already submitted this application. Check your status under My Documents → Applications.';
+                        break;
+                      } else if (docStatus == 'Approved' || docStatus == 'Verified') {
+                        isDisabled = true;
+                        disableReason = 'Your application has been accepted/approved. You do not need to re-apply.';
+                        break;
+                      }
                     }
                   }
                 }
