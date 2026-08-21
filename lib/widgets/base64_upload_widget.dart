@@ -35,6 +35,17 @@ class _Base64UploadWidgetState extends State<Base64UploadWidget> {
     super.initState();
     _base64Image = widget.initialBase64;
   }
+
+  @override
+  void didUpdateWidget(covariant Base64UploadWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialBase64 != oldWidget.initialBase64) {
+      setState(() {
+        _base64Image = widget.initialBase64;
+      });
+    }
+  }
+
   Future<void> _pickImage() async {
     setState(() => _isLoading = true);
     try {

@@ -449,7 +449,7 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
               const SizedBox(height: 12),
               Base64UploadWidget(
                 icon: Icons.people_outline,
-                title: 'बाबु/आमाको नागरिकताको प्रतिलिपि',
+                title: 'बाबु/आमाको नागरिकताको प्रमाणपत्र',
                 subtitle: 'अनिवार्य / compulsory',
                 initialBase64: _formData['doc_parentCitizenship'],
                 onImageChanged: (val) => _formData['doc_parentCitizenship'] = val,
@@ -1348,4 +1348,4 @@ class _NIDFormScreenState extends State<NIDFormScreen> {
       ),
     );
   }
-}
+}

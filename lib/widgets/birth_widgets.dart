@@ -152,7 +152,7 @@ class NameRowBirthEn extends StatelessWidget {
     return Row(children: [
       BirthLabeledField(label: 'Surname:', width: 120, isExpanded: true, fieldKey: prefixKey != null ? '_surname' : null, dataMap: dataMap, readOnly: readOnly),
       const SizedBox(width: 12),
-      BirthLabeledField(label: 'Given Name:', width: 120, isExpanded: true, fieldKey: prefixKey != null ? '_givenName' : null, dataMap: dataMap, readOnly: readOnly),
+      BirthLabeledField(label: 'Name:', width: 120, isExpanded: true, fieldKey: prefixKey != null ? '_givenName' : null, dataMap: dataMap, readOnly: readOnly),
       const SizedBox(width: 12),
       BirthLabeledField(label: 'Middle Name:', width: 100, isExpanded: true, fieldKey: prefixKey != null ? '_middleNameEn' : null, dataMap: dataMap, readOnly: readOnly),
     ]);

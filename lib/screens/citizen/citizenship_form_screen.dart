@@ -640,7 +640,7 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CitLabeledRow(
-          label: '१. नाम, घर (Full Name in block):',
+          label: '१. नाम, थर (Full Name in block):',
           field: CitField(readOnly: ro, fieldKey: 'fullName', dataMap: d),
         ),
 
@@ -711,22 +711,22 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CitLabeledRow(label: '६. बाबुको नाम, घर:', field: CitField(readOnly: ro, fieldKey: 'fatherName', dataMap: d)),
+        CitLabeledRow(label: '६. बाबुको नाम, थर :', field: CitField(readOnly: ro, fieldKey: 'fatherName', dataMap: d)),
         CitLabeledRow(label: '    ठेगाना:', field: CitField(readOnly: ro, fieldKey: 'fatherAddress', dataMap: d)),
         CitLabeledRow(label: '    नागरिकता नं.:', field: CitField(readOnly: ro, fieldKey: 'fatherCitNo', dataMap: d)),
-        CitLabeledRow(label: '७. आमाको नाम, घर:', field: CitField(readOnly: ro, fieldKey: 'motherName', dataMap: d)),
+        CitLabeledRow(label: '७. आमाको नाम, थर :', field: CitField(readOnly: ro, fieldKey: 'motherName', dataMap: d)),
         CitLabeledRow(label: '    ठेगाना:', field: CitField(readOnly: ro, fieldKey: 'motherAddress', dataMap: d)),
         CitLabeledRow(label: '    नागरिकता नं.:', field: CitField(readOnly: ro, fieldKey: 'motherCitNo', dataMap: d)),
         const SizedBox(height: 4),
-        const Text('८. पति/पत्नीको नाम, घर: (Optional)',
+        const Text('८. पति/पत्नीको नाम, थर : (Optional)',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.navy)),
-        CitField(readOnly: ro, fieldKey: 'spouseName', dataMap: d, hint: 'नाम, घर'),
+        CitField(readOnly: ro, fieldKey: 'spouseName', dataMap: d, hint: 'नाम, थर '),
         CitField(readOnly: ro, fieldKey: 'spouseAddress', dataMap: d, hint: 'ठेगाना'),
         CitField(readOnly: ro, fieldKey: 'spouseCitNo', dataMap: d, hint: 'नागरिकता नं.'),
         const SizedBox(height: 4),
-        const Text('९. संरक्षकको नाम, घर: (Optional)',
+        const Text('९. संरक्षकको नाम, थर : (Optional)',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.navy)),
-        CitField(readOnly: ro, fieldKey: 'guardianName', dataMap: d, hint: 'नाम, घर'),
+        CitField(readOnly: ro, fieldKey: 'guardianName', dataMap: d, hint: 'नाम, थर '),
       ],
     );
   }
@@ -902,7 +902,7 @@ class _CitizenshipFormScreenState extends State<CitizenshipFormScreen> {
           ElevatedButton.icon(
             onPressed: _printPreview,
             icon: const Icon(Icons.print, size: 18),
-            label: const Text('Print Preview / प्रिन्ट', style: TextStyle(fontSize: 15)),
+            label: const Text('पूर्वावलोकन ( Preview ) ', style: TextStyle(fontSize: 15)),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.teal,
               foregroundColor: Colors.white,

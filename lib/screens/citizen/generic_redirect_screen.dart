@@ -35,9 +35,36 @@ class _GenericRedirectScreenState extends State<GenericRedirectScreen> {
   @override
   void initState() {
     super.initState();
-    final draft = FormDraftService.getDraft('redirect_${widget.serviceType.name}');
-    if (draft != null) {
-      _attachedDocumentBase64 = draft['doc'];
+    _fetchSavedDocument();
+  }
+
+  Future<void> _fetchSavedDocument() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('documents')
+            .doc('service_${widget.serviceType.name}_doc')
+            .get();
+        if (mounted && doc.exists) {
+          setState(() {
+            _attachedDocumentBase64 = doc.data()?['base64'];
+          });
+        }
+      } catch (e) {
+        debugPrint('Error fetching doc: $e');
+      }
+    }
+  }
+
+  /// Returns the Firestore 'type' field value used when this service submits an application.
+  String _getServiceTypeKey() {
+    switch (widget.serviceType) {
+      case ServiceType.nid:       return 'NID Registration';
+      case ServiceType.passport:  return 'Passport';
+      case ServiceType.birthReg:  return 'Birth Registration';
     }
   }
 
@@ -144,20 +171,22 @@ class _GenericRedirectScreenState extends State<GenericRedirectScreen> {
                   setState(() {
                     _attachedDocumentBase64 = base64Str;
                   });
-                  if (base64Str != null) {
-                    FormDraftService.saveDraft('redirect_${widget.serviceType.name}', {'doc': base64Str});
-                    
-                    final user = FirebaseAuth.instance.currentUser;
-                    if (user != null) {
+                  
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user != null) {
+                    final docRef = FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(user.uid)
+                        .collection('documents')
+                        .doc('service_${widget.serviceType.name}_doc');
+                        
+                    if (base64Str != null) {
                       try {
-                        await FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(user.uid)
-                            .collection('documents')
-                            .add({
+                        await docRef.set({
                           'title': '${widget.serviceType.titleEn} Existing Document',
                           'base64': base64Str,
                           'uploadedAt': FieldValue.serverTimestamp(),
+                          'source': 'service_upload',
                         });
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -167,9 +196,13 @@ class _GenericRedirectScreenState extends State<GenericRedirectScreen> {
                       } catch (e) {
                         debugPrint('Error saving doc: $e');
                       }
+                    } else {
+                      try {
+                        await docRef.delete();
+                      } catch (e) {
+                        debugPrint('Error deleting doc: $e');
+                      }
                     }
-                  } else {
-                    FormDraftService.clearDraft('redirect_${widget.serviceType.name}');
                   }
                 },
               ),
@@ -184,48 +217,96 @@ class _GenericRedirectScreenState extends State<GenericRedirectScreen> {
               subtitle: 'नयाँ आवेदन दिनुहोस्',
             ),
             const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: _ApplyTile(
-                icon: Icons.article_outlined,
-                title: widget.serviceType.titleNp,
-                subtitle: widget.serviceType.titleEn,
-                isLast: true,
-                onTap: () {
-                  if (widget.serviceType == ServiceType.nid) {
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        pageBuilder: (_, __, ___) => NIDFormScreen(attachedDocumentBase64: _attachedDocumentBase64),
-                        transitionDuration: Duration.zero,
-                        reverseTransitionDuration: Duration.zero,
-                      ),
-                    );
-                  } else if (widget.serviceType == ServiceType.passport) {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => PassportFormScreen(attachedDocumentBase64: _attachedDocumentBase64)));
-                  } else if (widget.serviceType == ServiceType.birthReg) {
-                    Navigator.push(context, PageRouteBuilder(
-                      pageBuilder: (_, __, ___) => BirthFormScreen(attachedDocumentBase64: _attachedDocumentBase64),
-                      transitionDuration: Duration.zero,
-                      reverseTransitionDuration: Duration.zero,
-                    ));
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseAuth.instance.currentUser == null
+                  ? const Stream.empty()
+                  : FirebaseFirestore.instance
+                      .collection('applications')
+                      .where('citizenId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+                      .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
+                }
+
+                // DEFAULT: Apply is OPEN
+                bool isDisabled = false;
+                String? disableReason;
+
+                if (snapshot.hasData) {
+                  final serviceTypeKey = _getServiceTypeKey();
+                  // Loop through ALL applications for this user
+                  for (final doc in snapshot.data!.docs) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    if (data['isHidden'] == true) continue;
+                    
+                    final docType = (data['type'] ?? '').toString();
+                    final docStatus = (data['status'] ?? '').toString();
+                    // Only block if EXACT type match AND status is Pending or Processing
+                    if (docType == serviceTypeKey &&
+                        (docStatus == 'Pending' || docStatus == 'Processing')) {
+                      isDisabled = true;
+                      disableReason =
+                          'You have already submitted this application. Check your status under My Documents → Applications.';
+                      break;
+                    }
                   }
-                },
-              ),
+                }
+
+                // Separate check: if a doc is uploaded for THIS service only
+                if (!isDisabled && _attachedDocumentBase64 != null && _attachedDocumentBase64!.isNotEmpty) {
+                  isDisabled = true;
+                  disableReason =
+                      'Your document is already uploaded. Remove it from Upload Documents first if you want to re-apply.';
+                }
+
+                return Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: _ApplyTile(
+                    icon: Icons.article_outlined,
+                    title: widget.serviceType.titleNp,
+                    subtitle: widget.serviceType.titleEn,
+                    isLast: true,
+                    isDisabled: isDisabled,
+                    disableReason: disableReason,
+                    onTap: () {
+                      if (widget.serviceType == ServiceType.nid) {
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder: (_, __, ___) => NIDFormScreen(attachedDocumentBase64: _attachedDocumentBase64),
+                            transitionDuration: Duration.zero,
+                            reverseTransitionDuration: Duration.zero,
+                          ),
+                        );
+                      } else if (widget.serviceType == ServiceType.passport) {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => PassportFormScreen(attachedDocumentBase64: _attachedDocumentBase64)));
+                      } else if (widget.serviceType == ServiceType.birthReg) {
+                        Navigator.push(context, PageRouteBuilder(
+                          pageBuilder: (_, __, ___) => BirthFormScreen(attachedDocumentBase64: _attachedDocumentBase64),
+                          transitionDuration: Duration.zero,
+                          reverseTransitionDuration: Duration.zero,
+                        ));
+                      }
+                    },
+                  ),
+                );
+              },
             ),
 
             const SizedBox(height: 20),
+
           ],
         ),
       ),
@@ -284,6 +365,8 @@ class _ApplyTile extends StatelessWidget {
   final String subtitle;
   final VoidCallback onTap;
   final bool isLast;
+  final bool isDisabled;
+  final String? disableReason;
 
   const _ApplyTile({
     required this.icon,
@@ -291,64 +374,88 @@ class _ApplyTile extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
     this.isLast = false,
+    this.isDisabled = false,
+    this.disableReason,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.teal.withOpacity(0.10),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: AppColors.teal, size: 18),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 13,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: isDisabled ? null : onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: isDisabled ? Colors.grey.withOpacity(0.10) : AppColors.teal.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: isDisabled ? Colors.grey : AppColors.teal, size: 18),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isDisabled ? Colors.grey : AppColors.navy,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isDisabled ? Colors.grey : AppColors.teal,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Apply',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.navy,
                     ),
                   ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.teal,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                'Apply',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        if (isDisabled && disableReason != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline, color: Colors.orange, size: 14),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    disableReason!,
+                    style: const TextStyle(fontSize: 11, color: Colors.orange, height: 1.3),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

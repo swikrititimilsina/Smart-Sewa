@@ -430,50 +430,23 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
   Widget _buildDOBRow() {
     return _buildPadded(
       Wrap(
-        spacing: 10,
+        spacing: 20,
         runSpacing: 10,
         children: [
-          for (final e in [
-            ('वर्ष', 'YEAR (A.D.)', 70),
-            ('महिना', 'MONTH', 55),
-            ('दिन', 'DAY', 50),
-            ('वर्ष (B.S.)', 'YEAR (B.S.)', 70),
-            ('महिना', 'MONTH', 55),
-            ('दिन', 'DAY', 50),
-          ])
-            SizedBox(
-              width: e.$3.toDouble(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(e.$1,
-                      style: TextStyle(
-                          fontSize: 11, color: Colors.grey.shade700)),
-                  const SizedBox(height: 4),
-                  TextFormField(
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly
-                    ],
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.teal)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 10),
-                      isDense: true,
-                    ),
-                    style: const TextStyle(fontSize: 13, color: AppColors.navy),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(e.$2,
-                      style: TextStyle(
-                          fontSize: 10, color: Colors.grey.shade500)),
-                ],
-              ),
-            ),
+          PassportDateField(
+            readOnly: widget.readOnly,
+            label: 'Date of Birth (A.D.)\n(YEAR/MONTH/DAY)',
+            width: 160,
+            fieldKey: 'dob_ad',
+            dataMap: _formData,
+          ),
+          PassportDateField(
+            readOnly: widget.readOnly,
+            label: 'Date of Birth (B.S.)\n(YEAR/MONTH/DAY)',
+            width: 160,
+            fieldKey: 'dob_bs',
+            dataMap: _formData,
+          ),
         ],
       ),
     );
