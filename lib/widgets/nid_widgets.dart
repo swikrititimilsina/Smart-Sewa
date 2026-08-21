@@ -848,20 +848,23 @@ class _SignaturePadState extends State<SignaturePad> {
             borderRadius: BorderRadius.circular(8),
             color: Colors.white,
           ),
-          child: Listener(
-            onPointerDown: (e) => setState(() => _points.add(e.localPosition)),
-            onPointerMove: (e) => setState(() => _points.add(e.localPosition)),
-            onPointerUp: (_) => setState(() => _points.add(null)),
-            child: CustomPaint(
-              painter: _SigPainter(_points),
-              child: _hasSignature
-                  ? const SizedBox.expand()
-                  : Center(
-                      child: Text(
-                        'यहाँ दस्तखत गर्नुहोस्',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+          child: GestureDetector(
+            onPanUpdate: (_) {}, // Absorbs drag events so parent scroll view doesn't scroll
+            child: Listener(
+              onPointerDown: (e) => setState(() => _points.add(e.localPosition)),
+              onPointerMove: (e) => setState(() => _points.add(e.localPosition)),
+              onPointerUp: (_) => setState(() => _points.add(null)),
+              child: CustomPaint(
+                painter: _SigPainter(_points),
+                child: _hasSignature
+                    ? const SizedBox.expand()
+                    : Center(
+                        child: Text(
+                          'यहाँ दस्तखत गर्नुहोस्',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
         ),

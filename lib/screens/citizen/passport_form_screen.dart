@@ -261,9 +261,8 @@ class _PassportFormScreenState extends State<PassportFormScreen> {
                 _buildPadded(Wrap(spacing: 12, runSpacing: 8, children: [PassportField(readOnly: widget.readOnly, label: 'थर\nSurname', width: 300, fieldKey: 'passportField1', dataMap: _formData)])),
                 _buildFieldLabel('2. Given Names / नाम *'),
                 _buildPadded(Row(children: [
-                  NameSubField(nepLabel: 'पहिलो नाम', engLabel: 'First Name', flex: 3, fieldKey: 'nameSubField1', dataMap: _formData),
-                  NameSubField(nepLabel: 'बिचको नाम', engLabel: 'Middle Name (Optional)', flex: 2, fieldKey: 'nameSubField2', dataMap: _formData),
-                  NameSubField(nepLabel: 'थर', engLabel: 'Last Name', flex: 2, fieldKey: 'nameSubField3', dataMap: _formData),
+                  NameSubField(nepLabel: 'पहिलो नाम', engLabel: 'First Name', flex: 1, fieldKey: 'nameSubField1', dataMap: _formData),
+                  NameSubField(nepLabel: 'बिचको नाम', engLabel: 'Middle Name (Optional)', flex: 1, fieldKey: 'nameSubField2', dataMap: _formData),
                 ])),
                 _buildPadded(Wrap(spacing: 20, runSpacing: 10, children: [
                   PassportField(readOnly: widget.readOnly, label: '3. Place of Birth / जन्मस्थान *\n(District / Country if Abroad)', width: 220, fieldKey: 'passportField2', dataMap: _formData),
