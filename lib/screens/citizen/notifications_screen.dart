@@ -289,7 +289,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           separatorBuilder: (_, __) => const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final data = _allNotices[index];
-                            final ts = data['postedAt'] as Timestamp?;
+                            final ts = (data['postedAt'] ?? data['timestamp']) as Timestamp?;
                             final date = ts != null ? _formatDate(ts.toDate()) : 'Just now';
                             final title = data['title'] ?? 'Notice';
                             final message = data['message'] ?? '';

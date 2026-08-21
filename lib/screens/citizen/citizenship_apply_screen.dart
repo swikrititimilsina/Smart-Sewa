@@ -16,7 +16,7 @@ extension CitizenshipFormTypeX on CitizenshipFormType {
       case CitizenshipFormType.citizenship:
         return 'नागरिकता';
       case CitizenshipFormType.surnameChange:
-        return 'नागरिकताको सक्कल नक्कल\n(थर परिवर्तन)';
+        return 'थर परिवर्तन';
       case CitizenshipFormType.migration:
         return 'बसाइसराई';
     }

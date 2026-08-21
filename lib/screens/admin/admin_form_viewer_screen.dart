@@ -38,6 +38,12 @@ class AdminFormViewerScreen extends StatefulWidget {
 class _AdminFormViewerScreenState extends State<AdminFormViewerScreen> {
   String _currentStatus = '';
   DateTime? _biometricDate;
+  bool _isLoading = true;
+
+  bool get _needsBiometric {
+    final t = widget.applicationType;
+    return t == 'NID Registration' || t == 'Passport' || t == 'Citizenship';
+  }
 
   @override
   void initState() {
@@ -67,23 +73,8 @@ class _AdminFormViewerScreenState extends State<AdminFormViewerScreen> {
     }
   }
 
-  Future<void> _updateStatus(String newStatus) async {
-    // If approving, require a biometric date
-    if (newStatus == 'Approved' && _biometricDate == null) {
-      await _pickBiometricDate();
-      if (_biometricDate == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please select a biometric date before approving.'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return;
-      }
-    }
 
+  Future<void> _updateStatus(String newStatus) async {
     try {
       final appRef = FirebaseFirestore.instance
           .collection('applications')
@@ -104,11 +95,18 @@ class _AdminFormViewerScreenState extends State<AdminFormViewerScreen> {
           String message =
               'Your ${widget.applicationType} application is now $newStatus.';
 
-          if (newStatus == 'Approved' && _biometricDate != null) {
+          // Biometric date notification — only on Processing, only for relevant forms
+          if (newStatus == 'Processing' && _biometricDate != null && _needsBiometric) {
             final formatted =
                 DateFormat('EEEE, MMMM d, yyyy').format(_biometricDate!);
             message +=
                 '\n\n📅 Your biometric appointment is scheduled for: $formatted. Please visit the office with your original documents.';
+          }
+
+          // Collect card message — on Approved for ALL form types
+          if (newStatus == 'Approved') {
+            message +=
+                '\n\n🏢 Your card is ready for collection. Please visit the District Administration Office during office hours with your original documents to collect it.';
           }
 
           await FirebaseFirestore.instance
@@ -120,7 +118,7 @@ class _AdminFormViewerScreenState extends State<AdminFormViewerScreen> {
                 : 'Application Update',
             'message': message,
             'postedAt': FieldValue.serverTimestamp(),
-            if (newStatus == 'Approved' && _biometricDate != null)
+            if (newStatus == 'Processing' && _biometricDate != null && _needsBiometric)
               'biometricDate': Timestamp.fromDate(_biometricDate!),
           });
         }
@@ -419,66 +417,94 @@ class _AdminFormViewerScreenState extends State<AdminFormViewerScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Biometric date picker row
-          Row(
-            children: [
-              const Icon(Icons.fingerprint, color: AppColors.navy, size: 20),
-              const SizedBox(width: 8),
-              const Text('Biometric Date:',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, color: AppColors.navy)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: GestureDetector(
-                  onTap: _pickBiometricDate,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _biometricDate != null
-                          ? AppColors.teal.withOpacity(0.1)
-                          : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: _biometricDate != null
-                            ? AppColors.teal
-                            : Colors.grey.shade300,
+          // Biometric date picker — only for NID, Passport, Citizenship
+          // Hidden once status is Approved (no longer needed)
+          // Locked (read-only) once status is Processing (already set)
+          if (_needsBiometric && _currentStatus != 'Approved') ...[
+            Row(
+              children: [
+                Icon(Icons.fingerprint,
+                    color: _currentStatus == 'Processing'
+                        ? Colors.grey
+                        : AppColors.navy,
+                    size: 20),
+                const SizedBox(width: 8),
+                Text('Biometric Date:',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: _currentStatus == 'Processing'
+                            ? Colors.grey
+                            : AppColors.navy)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: GestureDetector(
+                    // Disabled once Processing — biometric date is already locked in
+                    onTap: _currentStatus == 'Processing'
+                        ? null
+                        : _pickBiometricDate,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _currentStatus == 'Processing'
+                            ? Colors.grey.shade100
+                            : _biometricDate != null
+                                ? AppColors.teal.withOpacity(0.1)
+                                : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _currentStatus == 'Processing'
+                              ? Colors.grey.shade300
+                              : _biometricDate != null
+                                  ? AppColors.teal
+                                  : Colors.grey.shade300,
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_month_outlined,
-                          size: 16,
-                          color: _biometricDate != null
-                              ? AppColors.teal
-                              : Colors.grey,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _biometricDate != null
-                              ? DateFormat('MMM d, yyyy')
-                                  .format(_biometricDate!)
-                              : 'Tap to select date',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: _biometricDate != null
-                                ? AppColors.teal
-                                : Colors.grey,
-                            fontWeight: _biometricDate != null
-                                ? FontWeight.w600
-                                : FontWeight.normal,
+                      child: Row(
+                        children: [
+                          Icon(
+                            _currentStatus == 'Processing'
+                                ? Icons.lock_outline
+                                : Icons.calendar_month_outlined,
+                            size: 16,
+                            color: _currentStatus == 'Processing'
+                                ? Colors.grey
+                                : _biometricDate != null
+                                    ? AppColors.teal
+                                    : Colors.grey,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              _biometricDate != null
+                                  ? '${DateFormat('MMM d, yyyy').format(_biometricDate!)}${_currentStatus == 'Processing' ? ' (locked)' : ''}'
+                                  : _currentStatus == 'Processing'
+                                      ? 'No date set'
+                                      : 'Tap to select date',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _currentStatus == 'Processing'
+                                    ? Colors.grey
+                                    : _biometricDate != null
+                                        ? AppColors.teal
+                                        : Colors.grey,
+                                fontWeight: _biometricDate != null
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
 
-          const SizedBox(height: 12),
 
           // Status update row
           Row(
@@ -501,7 +527,7 @@ class _AdminFormViewerScreenState extends State<AdminFormViewerScreen> {
             ],
           ),
 
-          if (_biometricDate != null) ...[
+          if (_needsBiometric && _biometricDate != null) ...[
             const SizedBox(height: 4),
             Container(
               padding:
@@ -518,7 +544,7 @@ class _AdminFormViewerScreenState extends State<AdminFormViewerScreen> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'On approval, citizen will be notified with biometric date: ${DateFormat('MMMM d, yyyy').format(_biometricDate!)}',
+                      'Citizen will be notified with biometric date: ${DateFormat('MMMM d, yyyy').format(_biometricDate!)}',
                       style: const TextStyle(
                           fontSize: 11, color: Colors.green),
                     ),

@@ -192,16 +192,6 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
             ),
           ],
         ),
-        if (_tabController.index == 0)
-          Positioned(
-            bottom: 24,
-            right: 24,
-            child: FloatingActionButton(
-              onPressed: _showUploadDialog,
-              backgroundColor: AppColors.teal,
-              child: const Icon(Icons.add, color: Colors.white),
-            ),
-          ),
       ],
     );
   }
@@ -310,6 +300,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> with SingleTickerProv
           .collection('users')
           .doc(user.uid)
           .collection('documents')
+          .where('source', isEqualTo: 'service_upload')
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {

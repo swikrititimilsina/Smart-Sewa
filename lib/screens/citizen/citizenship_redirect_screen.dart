@@ -20,9 +20,27 @@ class _CitizenshipRedirectScreenState extends State<CitizenshipRedirectScreen> {
   @override
   void initState() {
     super.initState();
-    final draft = FormDraftService.getDraft('redirect_citizenship');
-    if (draft != null) {
-      _attachedDocumentBase64 = draft['doc'];
+    _fetchSavedDocument();
+  }
+
+  Future<void> _fetchSavedDocument() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('documents')
+            .doc('service_citizenship_doc')
+            .get();
+        if (mounted && doc.exists) {
+          setState(() {
+            _attachedDocumentBase64 = doc.data()?['base64'];
+          });
+        }
+      } catch (e) {
+        debugPrint('Error fetching doc: $e');
+      }
     }
   }
 
@@ -117,20 +135,22 @@ class _CitizenshipRedirectScreenState extends State<CitizenshipRedirectScreen> {
                 setState(() {
                   _attachedDocumentBase64 = base64Str;
                 });
-                if (base64Str != null) {
-                  FormDraftService.saveDraft('redirect_citizenship', {'doc': base64Str});
-                  
-                  final user = FirebaseAuth.instance.currentUser;
-                  if (user != null) {
+                
+                final user = FirebaseAuth.instance.currentUser;
+                if (user != null) {
+                  final docRef = FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid)
+                      .collection('documents')
+                      .doc('service_citizenship_doc');
+
+                  if (base64Str != null) {
                     try {
-                      await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(user.uid)
-                          .collection('documents')
-                          .add({
+                      await docRef.set({
                         'title': 'Citizenship Existing Document',
                         'base64': base64Str,
                         'uploadedAt': FieldValue.serverTimestamp(),
+                        'source': 'service_upload',
                       });
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -140,9 +160,13 @@ class _CitizenshipRedirectScreenState extends State<CitizenshipRedirectScreen> {
                     } catch (e) {
                       debugPrint('Error saving doc: $e');
                     }
+                  } else {
+                    try {
+                      await docRef.delete();
+                    } catch (e) {
+                      debugPrint('Error deleting doc: $e');
+                    }
                   }
-                } else {
-                  FormDraftService.clearDraft('redirect_citizenship');
                 }
               },
             ),
@@ -156,9 +180,67 @@ class _CitizenshipRedirectScreenState extends State<CitizenshipRedirectScreen> {
               subtitle: 'नयाँ आवेदन दिनुहोस्',
             ),
             const SizedBox(height: 10),
-            _ApplyOptionsCard(context: context, attachedDocumentBase64: _attachedDocumentBase64),
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseAuth.instance.currentUser == null
+                  ? const Stream.empty()
+                  : FirebaseFirestore.instance
+                      .collection('applications')
+                      .where('citizenId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+                      .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
+                }
+
+                // DEFAULT: Apply is OPEN
+                bool isDisabled = false;
+                String? disableReason;
+
+                if (snapshot.hasData) {
+                  const citizenshipTypes = [
+                    'Citizenship',
+                    'Copy of Original — Surname Change',
+                    'Migration',
+                  ];
+                  // Loop through ALL applications for this user
+                  for (final doc in snapshot.data!.docs) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    if (data['isHidden'] == true) continue;
+                    
+                    final docType = (data['type'] ?? '').toString();
+                    final docStatus = (data['status'] ?? '').toString();
+                    if (citizenshipTypes.contains(docType)) {
+                      if (docStatus == 'Pending' || docStatus == 'Processing') {
+                        isDisabled = true;
+                        disableReason = 'You have already submitted this application. Check your status under My Documents → Applications.';
+                        break;
+                      } else if (docStatus == 'Approved' || docStatus == 'Verified') {
+                        isDisabled = true;
+                        disableReason = 'Your application has been accepted/approved. You do not need to re-apply.';
+                        break;
+                      }
+                    }
+                  }
+                }
+
+                // Separate check: if a doc is uploaded for THIS service only
+                if (!isDisabled && _attachedDocumentBase64 != null && _attachedDocumentBase64!.isNotEmpty) {
+                  isDisabled = true;
+                  disableReason =
+                      'Your document is already uploaded. Remove it from Upload Documents first if you want to re-apply.';
+                }
+
+                return _ApplyOptionsCard(
+                  context: context,
+                  attachedDocumentBase64: _attachedDocumentBase64,
+                  isDisabled: isDisabled,
+                  disableReason: disableReason,
+                );
+              },
+            ),
 
             const SizedBox(height: 20),
+
           ],
         ),
       ),
@@ -213,7 +295,15 @@ class _SectionLabel extends StatelessWidget {
 class _ApplyOptionsCard extends StatelessWidget {
   final BuildContext context;
   final String? attachedDocumentBase64;
-  const _ApplyOptionsCard({required this.context, this.attachedDocumentBase64});
+  final bool isDisabled;
+  final String? disableReason;
+  
+  const _ApplyOptionsCard({
+    required this.context,
+    this.attachedDocumentBase64,
+    this.isDisabled = false,
+    this.disableReason,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -237,6 +327,7 @@ class _ApplyOptionsCard extends StatelessWidget {
             title: 'नागरिकता',
             subtitle: 'Citizenship',
             formType: CitizenshipFormType.citizenship,
+            isDisabled: isDisabled,
           ),
           const Divider(height: 1, indent: 56),
           _ApplyTile(
@@ -244,6 +335,7 @@ class _ApplyOptionsCard extends StatelessWidget {
             title: 'नागरिकताको सक्कल नक्कल (थर परिवर्तन)',
             subtitle: 'Copy of Original — Surname Change',
             formType: CitizenshipFormType.surnameChange,
+            isDisabled: isDisabled,
           ),
           const Divider(height: 1, indent: 56),
           _ApplyTile(
@@ -252,7 +344,25 @@ class _ApplyOptionsCard extends StatelessWidget {
             subtitle: 'Migration',
             formType: CitizenshipFormType.migration,
             isLast: true,
+            isDisabled: isDisabled,
           ),
+          if (isDisabled && disableReason != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 14, top: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.orange, size: 14),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      disableReason!,
+                      style: const TextStyle(fontSize: 11, color: Colors.orange, height: 1.3),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -265,6 +375,7 @@ class _ApplyTile extends StatelessWidget {
   final String subtitle;
   final CitizenshipFormType formType;
   final bool isLast;
+  final bool isDisabled;
 
   const _ApplyTile({
     required this.icon,
@@ -272,6 +383,7 @@ class _ApplyTile extends StatelessWidget {
     required this.subtitle,
     required this.formType,
     this.isLast = false,
+    this.isDisabled = false,
   });
 
   @override
@@ -280,12 +392,11 @@ class _ApplyTile extends StatelessWidget {
       borderRadius: BorderRadius.vertical(
         bottom: isLast ? const Radius.circular(14) : Radius.zero,
       ),
-      onTap: () {
+      onTap: isDisabled ? null : () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                CitizenshipApplyScreen(formType: formType),
+            builder: (_) => CitizenshipApplyScreen(formType: formType),
           ),
         );
       },
@@ -297,10 +408,10 @@ class _ApplyTile extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: AppColors.teal.withOpacity(0.10),
+                color: isDisabled ? Colors.grey.withOpacity(0.10) : AppColors.teal.withOpacity(0.10),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon, color: AppColors.teal, size: 18),
+              child: Icon(icon, color: isDisabled ? Colors.grey : AppColors.teal, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -309,26 +420,24 @@ class _ApplyTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.navy,
+                      color: isDisabled ? Colors.grey : AppColors.navy,
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                        fontSize: 11, color: Colors.grey),
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
                   ),
                 ],
               ),
             ),
             // Green apply button
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.teal,
+                color: isDisabled ? Colors.grey : AppColors.teal,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text(
