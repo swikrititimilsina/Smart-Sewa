@@ -8,12 +8,12 @@
     ],
     "responses": {
       "en": [
-        "Namaste! I am Smart Sathi. I can help you with:\n  • Citizenship (all types + pratilipi)\n  • Birth Registration\n  • National ID (NID)\n  • Passport\n\nWhat do you need help with?",
+        "Namaste! I am Smart Assistant. I can help you with:\n  • Citizenship (all types + pratilipi)\n  • Birth Registration\n  • National ID (NID)\n  • Passport\n\nWhat do you need help with?",
         "Hello! Welcome to Smart Sewa. Ask me about citizenship, birth certificate, NID, or passport!",
         "Namaste! I am your government service guide. How can I help you today?"
       ],
       "ne": [
-        "नमस्ते! म Smart Sathi हुँ। म तपाईंलाई यसमा सहयोग गर्न सक्छु:\n  • नागरिकता (सबै प्रकार + प्रतिलिपि)\n  • जन्म दर्ता\n  • राष्ट्रिय परिचयपत्र (NID)\n  • राहदानी\n\nतपाईंलाई के मा सहयोग चाहियो?",
+        "नमस्ते! म Smart Assistant हुँ। म तपाईंलाई यसमा सहयोग गर्न सक्छु:\n  • नागरिकता (सबै प्रकार + प्रतिलिपि)\n  • जन्म दर्ता\n  • राष्ट्रिय परिचयपत्र (NID)\n  • राहदानी\n\nतपाईंलाई के मा सहयोग चाहियो?",
         "नमस्ते! Smart Sewa मा स्वागत छ। नागरिकता, जन्मदर्ता, NID, वा राहदानी बारे सोध्नुहोस्!",
         "नमस्ते! म तपाईंको सरकारी सेवा सहयोगी हुँ। आज म तपाईंलाई कसरी सहयोग गर्न सक्छु?"
       ]
@@ -30,12 +30,12 @@
     "responses": {
       "en": [
         "Dhanyabad! Hope I was helpful. Namaste!",
-        "Thank you for using Smart Sathi. Have a great day!",
+        "Thank you for using Smart Assistant. Have a great day!",
         "Goodbye! Come back anytime you need help."
       ],
       "ne": [
         "धन्यवाद! आशा छ म सहयोगी भएँ। नमस्ते!",
-        "Smart Sathi प्रयोग गर्नुभएकोमा धन्यवाद। तपाईंको दिन शुभ रहोस्!",
+        "Smart Assistant प्रयोग गर्नुभएकोमा धन्यवाद। तपाईंको दिन शुभ रहोस्!",
         "बिदा! सहयोग चाहिएमा फेरि आउनुहोस्।"
       ]
     }
@@ -90,14 +90,14 @@
   "about": {
     "patterns": [
       "what are you", "who are you",
-      "what is smart sathi", "about you",
+      "what is smart assistant", "about you",
       "what can you do", "your features",
       "tell me about yourself",
-      "तिमी को हौ", "तपाई को हो", "Smart Sathi के हो"
+      "तिमी को हौ", "तपाई को हो", "Smart Assistant के हो"
     ],
     "response": {
-      "en": "I am Smart Sathi, the virtual assistant of Smart Sewa!\n\nI can help you with:\n  • Citizenship Certificate (all types + pratilipi/duplicate)\n  • Birth Registration Certificate\n  • National Identity Card (NID)\n  • Passport\n\nFor each service I can tell you:\n  → Types and eligibility\n  → Required documents (by category)\n  → Step by step process\n  → Fees and processing time\n  → Office locations",
-      "ne": "म Smart Sathi हुँ, Smart Sewa को भर्चुअल सहायक!\n\nम तपाईंलाई यसमा सहयोग गर्न सक्छु:\n  • नागरिकता प्रमाणपत्र (सबै प्रकार + प्रतिलिपि)\n  • जन्म दर्ता प्रमाणपत्र\n  • राष्ट्रिय परिचयपत्र (NID)\n  • राहदानी\n\nहरेक सेवाको लागि म तपाईंलाई बताउन सक्छु:\n  → प्रकार र योग्यता\n  → आवश्यक कागजात (श्रेणी अनुसार)\n  → चरणबद्ध प्रक्रिया\n  → शुल्क र समय\n  → कार्यालयको स्थान"
+      "en": "I am Smart Assistant, the virtual assistant of Smart Sewa!\n\nI can help you with:\n  • Citizenship Certificate (all types + pratilipi/duplicate)\n  • Birth Registration Certificate\n  • National Identity Card (NID)\n  • Passport\n\nFor each service I can tell you:\n  → Types and eligibility\n  → Required documents (by category)\n  → Step by step process\n  → Fees and processing time\n  → Office locations",
+      "ne": "म Smart Assistant हुँ, Smart Sewa को भर्चुअल सहायक!\n\nम तपाईंलाई यसमा सहयोग गर्न सक्छु:\n  • नागरिकता प्रमाणपत्र (सबै प्रकार + प्रतिलिपि)\n  • जन्म दर्ता प्रमाणपत्र\n  • राष्ट्रिय परिचयपत्र (NID)\n  • राहदानी\n\nहरेक सेवाको लागि म तपाईंलाई बताउन सक्छु:\n  → प्रकार र योग्यता\n  → आवश्यक कागजात (श्रेणी अनुसार)\n  → चरणबद्ध प्रक्रिया\n  → शुल्क र समय\n  → कार्यालयको स्थान"
     }
   },
 

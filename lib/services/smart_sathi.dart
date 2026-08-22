@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 
-class SmartSathi {
+class SmartAssistant {
   static const Map<String, String> _typoMap = {
     "citiznship": "citizenship", "citienship": "citizenship", "citizeship": "citizenship", "citzenship": "citizenship", "nagarikatha": "citizenship", "brith": "birth", "bith": "birth", "berth": "birth", "janmadarta": "birth certificate", "ndi": "nid", "ind": "nid", "natinal": "national", "identiy": "identity", "nabalik": "minor", "pasport": "passport", "passprt": "passport", "passort": "passport", "passpot": "passport", "rahdani": "passport", "rahadni": "passport", "diplmatic": "diplomatic", "ofical": "official", "documant": "document", "docuemnt": "document", "documnet": "document", "documets": "documents", "stesp": "steps", "hwo": "how", "appply": "apply", "aply": "apply", "pratlipi": "pratilipi", "duplicat": "duplicate", "registraton": "registration",
   };

@@ -30,7 +30,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _messages.add({
       "sender": "bot",
-      "text": "Namaste! I am Smart Sathi. Ask me in English or नेपालीमा!",
+      "text": "Namaste! I am Smart Assistant. Ask me in English or नेपालीमा!",
       "lang": "en"
     });
   }
@@ -85,7 +85,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Smart Sathi Chat"),
+        title: const Text("Smart Assistant Chat"),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         actions: [
@@ -110,7 +110,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (_isTyping && index == _messages.length) {
                   return const Align(
                     alignment: Alignment.centerLeft,
-                    child: Text("Smart Sathi is typing...",
+                    child: Text("Smart Assistant is typing...",
                         style: TextStyle(color: Colors.grey, fontSize: 12)),
                   );
                 }

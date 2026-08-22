@@ -436,7 +436,7 @@ class _HomeContent extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
-              label: const Text('Chat with Smart Sathi',
+              label: const Text('Chat with Smart Assistant',
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.teal,

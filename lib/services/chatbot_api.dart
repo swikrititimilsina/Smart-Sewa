@@ -4,11 +4,11 @@ import 'package:smartsewa/services/smart_sathi.dart';
 
 class ChatbotApi {
   // Store instances per session ID to support multiple chats/users if needed
-  static final Map<String, SmartSathi> _sessions = {};
+  static final Map<String, SmartAssistant> _sessions = {};
 
-  SmartSathi _getBot(String sessionId) {
+  SmartAssistant _getBot(String sessionId) {
     if (!_sessions.containsKey(sessionId)) {
-      _sessions[sessionId] = SmartSathi();
+      _sessions[sessionId] = SmartAssistant();
     }
     return _sessions[sessionId]!;
   }

@@ -1,6 +1,6 @@
 import '../data/local_data_source.dart';
 
-/// Service for the Smart Sathi chatbot.
+/// Service for the Smart Assistant chatbot.
 class ChatbotService {
   static Map<String, dynamic>? _rules;
 
@@ -16,7 +16,7 @@ class ChatbotService {
   /// Processes a user message and returns a bot response.
   static String getResponse(String userMessage) {
     if (_rules == null || _rules!.isEmpty) {
-      return 'Hello! I am Smart Sathi, your government service assistant. '
+      return 'Hello! I am Smart Assistant, your government service assistant. '
           'How can I help you today?';
     }
 
@@ -41,7 +41,7 @@ class ChatbotService {
 
   /// Returns a greeting message for the chatbot.
   static String get greetingMessage =>
-      'Namaste! \u0928\u092e\u0938\u094d\u0924\u0947! I am Smart Sathi, your government service assistant. '
+      'Namaste! \u0928\u092e\u0938\u094d\u0924\u0947! I am Smart Assistant, your government service assistant. '
       'Ask me anything about government services like NID, Citizenship, '
       'Birth Registration, or Passport.';
 }
