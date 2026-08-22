@@ -141,8 +141,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'SMART GOVERNMENT SERVICE ASSISTANT',
-                      style: TextStyle(fontSize: 10, letterSpacing: 2.0, color: AppColors.navy, fontWeight: FontWeight.w500),
+                      'One Platform, Different Service',
+                      style: TextStyle(fontSize: 12, letterSpacing: 1.2, color: AppColors.navy, fontWeight: FontWeight.w500),
                     ),
                   ]),
                 ),
